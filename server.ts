@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
@@ -11,6 +12,55 @@ const app = express();
 const PORT = 3000;
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'gvcn_database.json');
+
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://sohuavueougdlsqerwuk.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_2BcotajR597WKnTP9G0wrg_N8oBj1PM';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let supabaseLastSyncTime: string | null = null;
+let supabaseSyncError: string | null = null;
+
+async function syncToSupabase(data: any) {
+  try {
+    const { error } = await supabase
+      .from('gvcn_store')
+      .upsert({
+        id: 'gvcn_primary',
+        data,
+        updated_at: new Date().toISOString(),
+      });
+    if (error) {
+      supabaseSyncError = error.message;
+      console.warn('[Supabase Sync Notice]:', error.message);
+    } else {
+      supabaseLastSyncTime = new Date().toISOString();
+      supabaseSyncError = null;
+    }
+  } catch (err: any) {
+    supabaseSyncError = err.message || 'Lỗi kết nối Supabase';
+  }
+}
+
+async function initFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from('gvcn_store')
+      .select('data, updated_at')
+      .eq('id', 'gvcn_primary')
+      .maybeSingle();
+    if (data && data.data && !error) {
+      console.log('[Supabase] Đã đồng bộ dữ liệu mới nhất từ Supabase Cloud:', data.updated_at);
+      saveDatabase(data.data);
+      supabaseLastSyncTime = data.updated_at;
+      supabaseSyncError = null;
+    } else if (error) {
+      supabaseSyncError = error.message;
+      console.log('[Supabase Notice]:', error.message);
+    }
+  } catch (err: any) {
+    supabaseSyncError = err.message;
+  }
+}
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -290,6 +340,8 @@ function saveDatabase(data: any) {
     const tempPath = `${DB_FILE}.tmp`;
     fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
     fs.renameSync(tempPath, DB_FILE);
+    // Background sync to Supabase Cloud
+    syncToSupabase(data).catch(() => {});
   } catch (err) {
     console.error('Error saving database:', err);
     throw err;
@@ -1327,9 +1379,67 @@ app.post('/api/database/reset-demo', authMiddleware, teacherOnly, (req, res) => 
   return res.json({ message: 'Đã đặt lại dữ liệu mẫu lớp học thành công!' });
 });
 
+// 17. Supabase Cloud Integration Endpoints
+app.get('/api/supabase/status', authMiddleware, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('gvcn_store')
+      .select('updated_at')
+      .eq('id', 'gvcn_primary')
+      .maybeSingle();
+
+    return res.json({
+      connected: !error,
+      url: SUPABASE_URL,
+      lastSync: supabaseLastSyncTime || data?.updated_at || null,
+      error: error ? error.message : null,
+      isTableCreated: !error,
+    });
+  } catch (err: any) {
+    return res.json({
+      connected: false,
+      url: SUPABASE_URL,
+      lastSync: supabaseLastSyncTime,
+      error: err.message,
+      isTableCreated: false,
+    });
+  }
+});
+
+app.post('/api/supabase/sync', authMiddleware, teacherOnly, async (req, res) => {
+  try {
+    const db = loadDatabase();
+    const { error } = await supabase
+      .from('gvcn_store')
+      .upsert({
+        id: 'gvcn_primary',
+        data: db,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      return res.status(400).json({
+        error: `Lỗi đồng bộ Supabase: ${error.message}. Nếu chưa tạo bảng "gvcn_store", vui lòng chạy mã SQL trong mục Cài đặt trên Supabase SQL Editor.`,
+      });
+    }
+
+    supabaseLastSyncTime = new Date().toISOString();
+    supabaseSyncError = null;
+    return res.json({
+      message: 'Đã đồng bộ toàn bộ dữ liệu lên cơ sở dữ liệu Supabase thành công!',
+      lastSync: supabaseLastSyncTime,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Lỗi khi đồng bộ lên Supabase' });
+  }
+});
+
 // ---------------- VITE MIDDLEWARE / STATIC FILES ----------------
 async function startServer() {
   const isProd = process.env.NODE_ENV === 'production';
+
+  // Initial cloud sync attempt
+  await initFromSupabase().catch(() => {});
 
   if (!isProd) {
     const vite = await createViteServer({
@@ -1346,6 +1456,7 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[GVCN Server] Running on http://localhost:${PORT}`);
+    console.log(`[GVCN Server] Connected to Supabase: ${SUPABASE_URL}`);
   });
 }
 
