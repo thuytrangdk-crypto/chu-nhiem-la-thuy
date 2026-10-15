@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Newspaper,
   LayoutGrid,
@@ -15,10 +15,61 @@ import {
   AlertCircle,
   Image as ImageIcon,
   Sparkles,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Upload,
+  X,
+  Maximize2,
+  RefreshCw,
+  Link2
 } from 'lucide-react';
 import { AppData, UserRole, Announcement, HonorItem } from '../types';
 import { apiRequest } from '../utils/api';
+
+// Client-side image compression and conversion to Base64 data URL
+function processSelectedImage(file: File): Promise<string> {
+  if (!file.type.startsWith('image/')) {
+    return Promise.reject(new Error('Tệp không phải là hình ảnh. Vui lòng chọn tệp .jpg, .png, .webp...'));
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Không thể đọc tệp hình ảnh'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Hình ảnh bị lỗi hoặc không hỗ trợ định dạng này'));
+      img.onload = () => {
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return resolve(reader.result as string);
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        // Compress as JPEG 0.82 to keep file size lightweight and crisp
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        resolve(dataUrl);
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 interface BoardAndSeatingViewProps {
   data: AppData;
@@ -38,6 +89,7 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
   // --- TAB 1: BẢNG TIN STATE ---
   const [editingAnn, setEditingAnn] = useState<Announcement | null>(null);
   const [annCategoryFilter, setAnnCategoryFilter] = useState<string>('all');
+  const [previewFullImageUrl, setPreviewFullImageUrl] = useState<string | null>(null);
 
   // --- TAB 2: SƠ ĐỒ LỚP STATE ---
   // Local copy of seating chart for editing & drag/swap
@@ -65,6 +117,11 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
   const [isPosting, setIsPosting] = useState(false);
   const [postSuccess, setPostSuccess] = useState<string | null>(null);
   const [postError, setPostError] = useState<string | null>(null);
+
+  // Image Upload & Selection State
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   // Helper map studentId to student object
   const studentMap = React.useMemo(() => {
@@ -239,7 +296,74 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
     }
   };
 
-  // ---------------- TAB 4 HANDLERS (ĐĂNG THÔNG TIN MỚI) ----------------
+  // ---------------- TAB 4 HANDLERS (ĐĂNG & SỬA THÔNG TIN) ----------------
+  const processAndSetImage = async (file: File) => {
+    setIsProcessingImage(true);
+    setPostError(null);
+    try {
+      const dataUrl = await processSelectedImage(file);
+      setNewImageUrl(dataUrl);
+    } catch (err: any) {
+      setPostError(err.message || 'Lỗi khi xử lý file ảnh');
+    } finally {
+      setIsProcessingImage(false);
+    }
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processAndSetImage(file);
+      // Reset input value so same file can be selected again if needed
+      e.target.value = '';
+    }
+  };
+
+  const handleImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      processAndSetImage(file);
+    }
+  };
+
+  const handlePasteImage = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          processAndSetImage(file);
+          setImageInputMode('upload');
+          break;
+        }
+      }
+    }
+  };
+
+  const handleEditAnn = (ann: Announcement) => {
+    setEditingAnn(ann);
+    setNewTitle(ann.title);
+    setNewContent(ann.content);
+    setNewCategory(ann.category);
+    setNewImageUrl(ann.imageUrl || '');
+    setNewIsPinned(ann.isPinned);
+    setPostError(null);
+    setPostSuccess(null);
+    setActiveTab(3); // Switch to form tab
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAnn(null);
+    setNewTitle('');
+    setNewContent('');
+    setNewImageUrl('');
+    setNewIsPinned(false);
+    setPostError(null);
+    setPostSuccess(null);
+  };
+
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     setPostError(null);
@@ -250,6 +374,7 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
       await apiRequest('/api/announcements', {
         method: 'POST',
         body: {
+          id: editingAnn ? editingAnn.id : undefined,
           title: newTitle,
           content: newContent,
           category: newCategory,
@@ -258,15 +383,16 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
         },
       });
       await onRefreshData();
-      setPostSuccess('Đã đăng thông báo thành công!');
+      setPostSuccess(editingAnn ? 'Đã cập nhật thông báo thành công!' : 'Đã đăng thông báo thành công!');
       setNewTitle('');
       setNewContent('');
       setNewImageUrl('');
       setNewIsPinned(false);
+      setEditingAnn(null);
       setTimeout(() => {
         setActiveTab(0); // switch to announcements tab
         setPostSuccess(null);
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
       setPostError(err.message || 'Không thể đăng thông báo');
     } finally {
@@ -371,13 +497,21 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
                     </h3>
 
                     {ann.imageUrl && (
-                      <div className="my-3 rounded-xl overflow-hidden border border-slate-100 max-h-48 bg-slate-50 flex items-center justify-center">
+                      <div
+                        onClick={() => setPreviewFullImageUrl(ann.imageUrl || null)}
+                        className="my-3 rounded-xl overflow-hidden border border-slate-200/80 max-h-56 bg-slate-50 flex items-center justify-center cursor-pointer group relative"
+                        title="Nhấn để xem ảnh phóng to"
+                      >
                         <img
                           src={ann.imageUrl}
                           alt={ann.title}
-                          className="object-cover w-full h-full"
+                          className="object-cover w-full h-full group-hover:scale-102 transition-transform duration-200"
                           referrerPolicy="no-referrer"
                         />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1.5 backdrop-blur-[1px]">
+                          <Maximize2 className="w-4 h-4" />
+                          <span>Xem ảnh lớn</span>
+                        </div>
                       </div>
                     )}
 
@@ -393,6 +527,13 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
 
                     {role === 'teacher' && (
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEditAnn(ann)}
+                          title="Chỉnh sửa thông báo & hình ảnh"
+                          className="p-1.5 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => handleTogglePin(ann)}
                           title={ann.isPinned ? 'Bỏ ghim' : 'Ghim thông báo'}
@@ -498,15 +639,32 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
           {/* VISUAL SEATING CHART (TOP-DOWN VIEW) */}
           <div className="border border-slate-200 rounded-2xl p-6 bg-slate-50/50 print:border-none print:p-0">
             {/* 1. BLACKBOARD & TEACHER DESK AT TOP */}
-            <div className="max-w-xl mx-auto mb-8 space-y-3">
+            <div className="max-w-xl mx-auto mb-6 space-y-3">
               {/* Blackboard */}
               <div className="h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white text-xs font-bold tracking-widest shadow-md border-2 border-slate-700 uppercase">
                 BẢNG LỚP HỌC
               </div>
 
-              {/* Teacher Desk */}
-              <div className="flex justify-end pr-4">
-                <div className="w-36 h-10 bg-amber-100 border-2 border-amber-300 rounded-lg flex items-center justify-center text-[11px] font-bold text-amber-900 shadow-xs">
+              {/* Teacher Desk & Color Legend */}
+              <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+                <div className="flex items-center gap-3 text-[11px] font-medium bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500 ring-1 ring-sky-300" />
+                    <span className="text-sky-800 font-bold">Nam</span>
+                  </div>
+                  <span className="text-slate-300">|</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400 ring-1 ring-rose-300" />
+                    <span className="text-rose-700 font-bold">Nữ</span>
+                  </div>
+                  <span className="text-slate-300">|</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded border border-dashed border-slate-400 bg-slate-100" />
+                    <span className="text-slate-500">Chỗ trống</span>
+                  </div>
+                </div>
+
+                <div className="w-32 h-9 bg-amber-100 border-2 border-amber-300 rounded-lg flex items-center justify-center text-[11px] font-bold text-amber-900 shadow-xs">
                   BÀN GIÁO VIÊN
                 </div>
               </div>
@@ -550,9 +708,9 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
                           key={deskNum}
                           className="bg-slate-50/80 p-2 rounded-xl border border-slate-200/70"
                         >
-                          <div className="text-[10px] font-bold text-slate-600 mb-1 flex items-center justify-between">
-                            <span>Bàn {deskNum}</span>
-                            <span className="text-[9px] text-slate-600">2 chỗ</span>
+                          <div className="text-[10px] font-bold text-slate-600 mb-1.5 flex items-center justify-between px-0.5">
+                            <span className="font-semibold text-slate-700">Bàn {deskNum}</span>
+                            <span className="text-[9px] text-slate-600 font-medium">2 chỗ ngồi</span>
                           </div>
 
                           <div className="grid grid-cols-2 gap-1.5">
@@ -563,27 +721,52 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
                               onDragOver={handleDragOver}
                               onDrop={(e) => handleDrop(e, seat1Key)}
                               onClick={() => handleSeatClick(seat1Key)}
-                              className={`p-2 rounded-lg text-center transition-all min-h-[46px] flex flex-col justify-center cursor-pointer ${
+                              className={`p-2 rounded-xl text-center transition-all min-h-[58px] flex flex-col items-center justify-center cursor-pointer select-none ${
                                 selectedSeatForSwap === seat1Key
-                                  ? 'bg-sky-200 border-2 border-sky-600 shadow-md ring-2 ring-sky-300'
+                                  ? 'bg-amber-100 border-2 border-amber-500 shadow-md ring-2 ring-amber-300 scale-[1.02]'
                                   : isMatch1
-                                  ? 'bg-amber-100 border-2 border-amber-500'
+                                  ? 'bg-emerald-100 border-2 border-emerald-500 shadow-md ring-2 ring-emerald-300 scale-[1.02]'
                                   : st1
-                                  ? 'bg-white border border-slate-200 hover:border-sky-300 shadow-xs'
+                                  ? st1.gender === 'Nữ'
+                                    ? 'bg-rose-50/70 border border-rose-200 hover:border-rose-300 hover:bg-rose-50 shadow-2xs'
+                                    : 'bg-sky-50/70 border border-sky-200 hover:border-sky-300 hover:bg-sky-50 shadow-2xs'
                                   : 'bg-slate-100/60 border border-dashed border-slate-300 hover:bg-slate-200/50'
                               }`}
                             >
                               {st1 ? (
-                                <>
-                                  <span className="text-[11px] font-bold text-slate-800 truncate block">
-                                    {st1.fullName}
-                                  </span>
-                                  <span className="text-[9px] font-mono text-slate-600 block">
+                                <div className="w-full flex flex-col items-center justify-center text-center space-y-1">
+                                  <div className="flex items-center justify-center gap-1 w-full px-0.5">
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                        st1.gender === 'Nữ' ? 'bg-rose-400' : 'bg-sky-500'
+                                      }`}
+                                      title={st1.gender}
+                                    />
+                                    <span
+                                      title={st1.fullName}
+                                      className={`text-[11.5px] font-bold leading-tight truncate text-center ${
+                                        st1.gender === 'Nữ'
+                                          ? 'text-rose-600'
+                                          : 'text-sky-700'
+                                      }`}
+                                    >
+                                      {st1.fullName}
+                                    </span>
+                                  </div>
+                                  <span
+                                    className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-md border text-center ${
+                                      st1.gender === 'Nữ'
+                                        ? 'bg-white/90 text-rose-600 border-rose-200/80'
+                                        : 'bg-white/90 text-sky-700 border-sky-200/80'
+                                    }`}
+                                  >
                                     {st1.studentCode}
                                   </span>
-                                </>
+                                </div>
                               ) : (
-                                <span className="text-[10px] text-slate-600 italic">Trống</span>
+                                <div className="w-full flex flex-col items-center justify-center text-center py-1">
+                                  <span className="text-[10px] font-medium text-slate-600 italic">Trống</span>
+                                </div>
                               )}
                             </div>
 
@@ -594,27 +777,52 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
                               onDragOver={handleDragOver}
                               onDrop={(e) => handleDrop(e, seat2Key)}
                               onClick={() => handleSeatClick(seat2Key)}
-                              className={`p-2 rounded-lg text-center transition-all min-h-[46px] flex flex-col justify-center cursor-pointer ${
+                              className={`p-2 rounded-xl text-center transition-all min-h-[58px] flex flex-col items-center justify-center cursor-pointer select-none ${
                                 selectedSeatForSwap === seat2Key
-                                  ? 'bg-sky-200 border-2 border-sky-600 shadow-md ring-2 ring-sky-300'
+                                  ? 'bg-amber-100 border-2 border-amber-500 shadow-md ring-2 ring-amber-300 scale-[1.02]'
                                   : isMatch2
-                                  ? 'bg-amber-100 border-2 border-amber-500'
+                                  ? 'bg-emerald-100 border-2 border-emerald-500 shadow-md ring-2 ring-emerald-300 scale-[1.02]'
                                   : st2
-                                  ? 'bg-white border border-slate-200 hover:border-sky-300 shadow-xs'
+                                  ? st2.gender === 'Nữ'
+                                    ? 'bg-rose-50/70 border border-rose-200 hover:border-rose-300 hover:bg-rose-50 shadow-2xs'
+                                    : 'bg-sky-50/70 border border-sky-200 hover:border-sky-300 hover:bg-sky-50 shadow-2xs'
                                   : 'bg-slate-100/60 border border-dashed border-slate-300 hover:bg-slate-200/50'
                               }`}
                             >
                               {st2 ? (
-                                <>
-                                  <span className="text-[11px] font-bold text-slate-800 truncate block">
-                                    {st2.fullName}
-                                  </span>
-                                  <span className="text-[9px] font-mono text-slate-600 block">
+                                <div className="w-full flex flex-col items-center justify-center text-center space-y-1">
+                                  <div className="flex items-center justify-center gap-1 w-full px-0.5">
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                        st2.gender === 'Nữ' ? 'bg-rose-400' : 'bg-sky-500'
+                                      }`}
+                                      title={st2.gender}
+                                    />
+                                    <span
+                                      title={st2.fullName}
+                                      className={`text-[11.5px] font-bold leading-tight truncate text-center ${
+                                        st2.gender === 'Nữ'
+                                          ? 'text-rose-600'
+                                          : 'text-sky-700'
+                                      }`}
+                                    >
+                                      {st2.fullName}
+                                    </span>
+                                  </div>
+                                  <span
+                                    className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-md border text-center ${
+                                      st2.gender === 'Nữ'
+                                        ? 'bg-white/90 text-rose-600 border-rose-200/80'
+                                        : 'bg-white/90 text-sky-700 border-sky-200/80'
+                                    }`}
+                                  >
                                     {st2.studentCode}
                                   </span>
-                                </>
+                                </div>
                               ) : (
-                                <span className="text-[10px] text-slate-600 italic">Trống</span>
+                                <div className="w-full flex flex-col items-center justify-center text-center py-1">
+                                  <span className="text-[10px] font-medium text-slate-600 italic">Trống</span>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -804,14 +1012,30 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
         </div>
       )}
 
-      {/* ================= TAB 4: ĐĂNG THÔNG TIN MỚI (Teacher only) ================= */}
+      {/* ================= TAB 4: ĐĂNG & SỬA THÔNG TIN (Teacher only) ================= */}
       {activeTab === 3 && role === 'teacher' && (
-        <div className="max-w-2xl mx-auto bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
-          <div className="pb-3 border-b border-slate-100">
-            <h3 className="text-base font-bold text-slate-800">Đăng Thông Báo & Tin Tức Mới</h3>
-            <p className="text-xs text-slate-500">
-              Thông tin sau khi đăng sẽ tự động xuất hiện tại Bảng tin lớp cho học sinh và phụ huynh xem
-            </p>
+        <div
+          onPaste={handlePasteImage}
+          className="max-w-2xl mx-auto bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-5"
+        >
+          <div className="pb-3 border-b border-slate-100 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-800">
+                {editingAnn ? 'Chỉnh Sửa Thông Báo & Tin Tức' : 'Đăng Thông Báo & Tin Tức Mới'}
+              </h3>
+              <p className="text-xs text-slate-500">
+                Thông tin sau khi lưu sẽ tự động xuất hiện tại Bảng tin lớp cho học sinh và phụ huynh xem
+              </p>
+            </div>
+            {editingAnn && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer shrink-0"
+              >
+                Hủy chỉnh sửa
+              </button>
+            )}
           </div>
 
           {postSuccess && (
@@ -843,38 +1067,162 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Phân loại thông tin
-                </label>
-                <select
-                  value={newCategory}
-                  onChange={(e: any) => setNewCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
-                >
-                  <option value="Thông báo chung">Thông báo chung</option>
-                  <option value="Học tập">Học tập</option>
-                  <option value="Hoạt động">Hoạt động ngoại khóa</option>
-                  <option value="Nhắc nhở">Nhắc nhở nề nếp</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Phân loại thông tin *
+              </label>
+              <select
+                value={newCategory}
+                onChange={(e: any) => setNewCategory(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+              >
+                <option value="Thông báo chung">Thông báo chung</option>
+                <option value="Học tập">Học tập</option>
+                <option value="Hoạt động">Hoạt động ngoại khóa</option>
+                <option value="Nhắc nhở">Nhắc nhở nề nếp</option>
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Hình ảnh đính kèm (URL tùy chọn)
+            {/* Hình ảnh đính kèm (Chọn từ máy hoặc nhập URL) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Hình ảnh đính kèm (Tùy chọn)
                 </label>
-                <div className="relative">
-                  <input
-                    type="url"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
-                  <ImageIcon className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setImageInputMode('upload')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                      imageInputMode === 'upload'
+                        ? 'bg-white text-sky-700 shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Tải từ máy / điện thoại
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageInputMode('url')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                      imageInputMode === 'url'
+                        ? 'bg-white text-sky-700 shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Nhập liên kết (URL)
+                  </button>
                 </div>
               </div>
+
+              {imageInputMode === 'upload' ? (
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    className="hidden"
+                  />
+
+                  {newImageUrl ? (
+                    <div className="relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-3 flex items-center gap-3">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0 flex items-center justify-center shadow-xs">
+                        <img
+                          src={newImageUrl}
+                          alt="Đính kèm"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 mb-0.5">
+                          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Đã chọn ảnh thành công</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          Ảnh đã sẵn sàng đưa lên bảng tin cho học sinh xem
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-2.5 py-1 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer border border-sky-200/60"
+                          >
+                            Đổi ảnh khác
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNewImageUrl('')}
+                            className="px-2.5 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-rose-200/60"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Xóa ảnh
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={handleImageDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-sky-300 hover:border-sky-500 bg-sky-50/50 hover:bg-sky-50 rounded-xl p-5 text-center transition-all cursor-pointer group"
+                    >
+                      {isProcessingImage ? (
+                        <div className="flex flex-col items-center justify-center py-2 space-y-2">
+                          <RefreshCw className="w-6 h-6 text-sky-600 animate-spin" />
+                          <span className="text-xs font-medium text-sky-700">Đang nén và xử lý hình ảnh...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center space-y-1.5">
+                          <div className="w-11 h-11 rounded-full bg-white shadow-xs border border-sky-200 flex items-center justify-center text-sky-600 group-hover:scale-105 transition-transform">
+                            <Upload className="w-5 h-5 text-sky-600" />
+                          </div>
+                          <span className="text-xs font-bold text-slate-800">
+                            Nhấn để chọn ảnh từ máy hoặc kéo thả ảnh vào đây
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            Hỗ trợ JPG, PNG, WEBP, GIF · Có thể chụp ảnh trực tiếp từ điện thoại hoặc dán ảnh (Ctrl+V)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="url"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      placeholder="Dán đường dẫn ảnh: https://example.com/anh.jpg"
+                      className="w-full pl-3.5 pr-9 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                    />
+                    <ImageIcon className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
+                  </div>
+                  {newImageUrl && (
+                    <div className="flex items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                      <img
+                        src={newImageUrl}
+                        alt="Preview"
+                        className="w-12 h-12 object-cover rounded-lg border border-slate-200 bg-white shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <span className="text-xs text-slate-600 truncate flex-1">{newImageUrl}</span>
+                      <button
+                        type="button"
+                        onClick={() => setNewImageUrl('')}
+                        className="text-xs text-rose-500 hover:text-rose-700 font-medium px-2 py-1 cursor-pointer"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -907,7 +1255,10 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
             <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setActiveTab(0)}
+                onClick={() => {
+                  if (editingAnn) handleCancelEdit();
+                  setActiveTab(0);
+                }}
                 className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
               >
                 Hủy
@@ -917,10 +1268,47 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
                 disabled={isPosting}
                 className="px-5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl transition-colors cursor-pointer shadow-xs disabled:opacity-50"
               >
-                {isPosting ? 'Đang đăng...' : 'Đăng Thông Tin'}
+                {isPosting
+                  ? 'Đang lưu...'
+                  : editingAnn
+                  ? 'Lưu Thay Đổi'
+                  : 'Đăng Thông Tin'}
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Lightbox Image Preview Modal */}
+      {previewFullImageUrl && (
+        <div
+          onClick={() => setPreviewFullImageUrl(null)}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-4xl max-h-[92vh] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-slate-700"
+          >
+            <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-white">
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <ImageIcon className="w-4 h-4 text-sky-400" />
+                <span>Xem hình ảnh đầy đủ</span>
+              </div>
+              <button
+                onClick={() => setPreviewFullImageUrl(null)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-3 overflow-auto max-h-[calc(92vh-50px)] flex items-center justify-center bg-slate-950">
+              <img
+                src={previewFullImageUrl}
+                alt="Hình ảnh đầy đủ"
+                className="max-h-[82vh] w-auto max-w-full object-contain rounded-lg"
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

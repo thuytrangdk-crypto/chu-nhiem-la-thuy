@@ -61,6 +61,7 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
   const [importErrors, setImportErrors] = useState<ValidationError[]>([]);
   const [isParsingExcel, setIsParsingExcel] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
+  const [clearOldStudents, setClearOldStudents] = useState(false);
 
   // Filtered & sorted student list
   const filteredStudents = useMemo(() => {
@@ -200,12 +201,23 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
   // Commit imported rows
   const handleCommitImport = async () => {
     if (parsedRows.length === 0) return;
+
+    if (clearOldStudents && data.students.length > 0) {
+      const confirmDelete = window.confirm(
+        `⚠️ CẢNH BÁO QUAN TRỌNG:\n\nBạn đang chọn tùy chọn "XÓA TOÀN BỘ HỌC SINH CŨ".\n\nToàn bộ ${data.students.length} học sinh hiện tại cùng sơ đồ chỗ ngồi, điểm danh, thi đua và bảng điểm cũ sẽ được XÓA HOÀN TOÀN để thay bằng ${parsedRows.length} học sinh trong danh sách mới này.\n\nBạn có chắc chắn 100% muốn tiếp tục không?`
+      );
+      if (!confirmDelete) return;
+    }
+
     setIsCommittingImport(true);
 
     try {
       const res = await apiRequest('/api/students/import', {
         method: 'POST',
-        body: { students: parsedRows },
+        body: {
+          students: parsedRows,
+          clearOldStudents: clearOldStudents,
+        },
       });
       alert(res.message);
       await onRefreshData();
@@ -213,6 +225,7 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
       setExcelFile(null);
       setParsedRows([]);
       setImportErrors([]);
+      setClearOldStudents(false);
     } catch (err: any) {
       alert(err.message || 'Lỗi khi nhập danh sách học sinh');
     } finally {
@@ -612,6 +625,54 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
                 </div>
               )}
 
+              {/* Option: Clear old students */}
+              <div
+                className={`p-3.5 rounded-xl border transition-all ${
+                  clearOldStudents
+                    ? 'bg-rose-50/90 border-rose-300 ring-1 ring-rose-300/60 shadow-xs'
+                    : 'bg-slate-50 border-slate-200/90 hover:border-slate-300'
+                }`}
+              >
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <div className="flex items-center h-5">
+                    <input
+                      type="checkbox"
+                      id="clearOldStudentsToggle"
+                      checked={clearOldStudents}
+                      onChange={(e) => setClearOldStudents(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer accent-rose-600"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`text-xs font-bold ${clearOldStudents ? 'text-rose-800' : 'text-slate-800'}`}>
+                        Xóa học sinh cũ khi nhập danh sách mới ({data.students.length} học sinh hiện có)
+                      </span>
+                      {clearOldStudents ? (
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-rose-100 text-rose-700 rounded-md uppercase tracking-wider">
+                          Chế độ thay thế mới
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[10px] font-medium bg-slate-200/80 text-slate-600 rounded-md">
+                          Chế độ thêm / cập nhật
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      {clearOldStudents ? (
+                        <span className="text-rose-700 font-medium">
+                          ⚠️ Chú ý: Tất cả {data.students.length} học sinh cũ trong lớp sẽ bị xóa, sơ đồ chỗ ngồi cùng điểm danh, thi đua và bảng điểm cũ sẽ được làm sạch để áp dụng hoàn toàn theo danh sách mới.
+                        </span>
+                      ) : (
+                        <span>
+                          Mặc định: Giữ lại danh sách học sinh hiện có. Học sinh mới sẽ được thêm vào lớp, học sinh trùng mã sẽ được cập nhật thông tin mới.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               {/* Parsed Rows Preview */}
               {parsedRows.length > 0 && (
                 <div className="space-y-2">
@@ -658,7 +719,7 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
               <button
                 type="button"
                 onClick={downloadStudentTemplate}
-                className="text-xs font-semibold text-sky-700 hover:text-sky-800 flex items-center gap-1"
+                className="text-xs font-semibold text-sky-700 hover:text-sky-800 flex items-center gap-1 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 Tải lại file mẫu
@@ -667,8 +728,11 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsImportModalOpen(false)}
-                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-xl"
+                  onClick={() => {
+                    setIsImportModalOpen(false);
+                    setClearOldStudents(false);
+                  }}
+                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-xl cursor-pointer"
                 >
                   Đóng
                 </button>
@@ -676,15 +740,27 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
                   type="button"
                   disabled={parsedRows.length === 0 || isCommittingImport}
                   onClick={handleCommitImport}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+                  className={`px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-xs disabled:opacity-50 flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    clearOldStudents
+                      ? 'bg-rose-600 hover:bg-rose-700'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                 >
                   {isCommittingImport ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Đang nhập dữ liệu...
+                      Đang xử lý dữ liệu...
+                    </>
+                  ) : clearOldStudents ? (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Xóa HS Cũ & Nhập Mới ({parsedRows.length} HS)
                     </>
                   ) : (
-                    `Xác Nhận Nhập (${parsedRows.length} HS)`
+                    <>
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Xác Nhận Nhập ({parsedRows.length} HS)
+                    </>
                   )}
                 </button>
               </div>

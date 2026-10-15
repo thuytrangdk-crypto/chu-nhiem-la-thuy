@@ -841,19 +841,35 @@ app.post(['/api/students', '/students'], authMiddleware, teacherOnly, (req, res)
 
 // Bulk Import Students
 app.post(['/api/students/import', '/students/import'], authMiddleware, teacherOnly, (req, res) => {
-  const { students } = req.body;
+  const { students, clearOldStudents, replaceExisting } = req.body;
   if (!Array.isArray(students) || students.length === 0) {
     return res.status(400).json({ error: 'Dữ liệu nhập danh sách trống' });
   }
 
+  const shouldClear = Boolean(clearOldStudents || replaceExisting);
   const db = loadDatabase();
+  const oldCount = db.students.length;
   let addedCount = 0;
   let updatedCount = 0;
+
+  if (shouldClear) {
+    db.students = [];
+    if (db.seatingChart && db.seatingChart.seats) {
+      for (const key of Object.keys(db.seatingChart.seats)) {
+        db.seatingChart.seats[key] = null;
+      }
+    }
+    // Clean up associated records of old students
+    db.attendance = [];
+    db.disciplineEvents = [];
+    db.grades = [];
+    db.honors = [];
+  }
 
   for (const st of students) {
     if (!st.studentCode || !st.fullName) continue;
     const cleanCode = String(st.studentCode).trim().toUpperCase();
-    const existing = db.students.find((s: any) => s.studentCode.toUpperCase() === cleanCode);
+    const existing = !shouldClear ? db.students.find((s: any) => s.studentCode.toUpperCase() === cleanCode) : null;
 
     if (existing) {
       existing.fullName = String(st.fullName).trim();
@@ -888,16 +904,21 @@ app.post(['/api/students/import', '/students/import'], authMiddleware, teacherOn
   db.auditLogs.unshift({
     id: `log_${Date.now()}`,
     timestamp: new Date().toISOString(),
-    action: 'Nhập danh sách học sinh bằng Excel',
+    action: shouldClear ? 'Xóa học sinh cũ và nhập danh sách mới' : 'Nhập danh sách học sinh bằng Excel',
     actor: db.settings.teacherName,
-    details: `Nhập thành công: ${addedCount} học sinh mới, cập nhật ${updatedCount} học sinh`
+    details: shouldClear
+      ? `Đã xóa ${oldCount} học sinh cũ và nhập mới ${addedCount} học sinh.`
+      : `Nhập thành công: ${addedCount} học sinh mới, cập nhật ${updatedCount} học sinh`
   });
 
   saveDatabase(db);
   return res.json({
-    message: `Nhập thành công! Đã thêm ${addedCount} học sinh mới và cập nhật ${updatedCount} học sinh hiện có.`,
+    message: shouldClear
+      ? `Đã xóa ${oldCount} học sinh cũ và nhập thành công ${addedCount} học sinh mới!`
+      : `Nhập thành công! Đã thêm ${addedCount} học sinh mới và cập nhật ${updatedCount} học sinh hiện có.`,
     addedCount,
-    updatedCount
+    updatedCount,
+    clearedCount: shouldClear ? oldCount : 0
   });
 });
 
