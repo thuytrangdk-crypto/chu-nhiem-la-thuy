@@ -1,0 +1,6 @@
+{
+  "name": "GVCN - Quản Trị Lớp Chủ Nhiệm",
+  "description": "Hệ thống quản lý lớp chủ nhiệm toàn diện: điểm danh, thi đua, bảng điểm, sơ đồ lớp và bảng tin.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
