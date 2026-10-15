@@ -10,11 +10,12 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const isVercel = !!process.env.VERCEL;
+const DATA_DIR = isVercel ? '/tmp' : path.resolve(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'gvcn_database.json');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://sohuavueougdlsqerwuk.supabase.co';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_2BcotajR597WKnTP9G0wrg_N8oBj1PM';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://sohuavueougdlsqerwuk.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_2BcotajR597WKnTP9G0wrg_N8oBj1PM';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let supabaseLastSyncTime: string | null = null;
@@ -64,6 +65,36 @@ async function initFromSupabase() {
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// CORS & Path Normalization for Vercel Serverless Functions
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  // If Vercel rewrites or proxies strip the '/api' prefix, normalize it so routes always match
+  if (!req.url.startsWith('/api') && (
+    req.url.startsWith('/auth') ||
+    req.url.startsWith('/data') ||
+    req.url.startsWith('/settings') ||
+    req.url.startsWith('/students') ||
+    req.url.startsWith('/attendance') ||
+    req.url.startsWith('/discipline') ||
+    req.url.startsWith('/subjects') ||
+    req.url.startsWith('/grades') ||
+    req.url.startsWith('/seating') ||
+    req.url.startsWith('/announcements') ||
+    req.url.startsWith('/honors') ||
+    req.url.startsWith('/backup') ||
+    req.url.startsWith('/database') ||
+    req.url.startsWith('/supabase')
+  )) {
+    req.url = `/api${req.url}`;
+  }
+  next();
+});
 
 // Helper for password hashing using salt + SHA-256
 function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
@@ -317,38 +348,42 @@ function getInitialData() {
   };
 }
 
-// Database helper functions with atomic write
+// Database helper functions with in-memory caching and atomic file write
+let memoryDb: any = null;
+
 function loadDatabase() {
-  try {
-    if (!fs.existsSync(DB_FILE)) {
-      const initial = getInitialData();
-      saveDatabase(initial);
-      return initial;
-    }
-    const content = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(content);
-  } catch (err) {
-    console.error('Error loading database, resetting to initial seed:', err);
-    const initial = getInitialData();
-    saveDatabase(initial);
-    return initial;
+  if (memoryDb) {
+    return memoryDb;
   }
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const content = fs.readFileSync(DB_FILE, 'utf-8');
+      memoryDb = JSON.parse(content);
+      return memoryDb;
+    }
+  } catch (err) {
+    console.warn('Could not read DB file, fallback to initial seed:', err);
+  }
+  const initial = getInitialData();
+  saveDatabase(initial);
+  memoryDb = initial;
+  return memoryDb;
 }
 
 function saveDatabase(data: any) {
+  memoryDb = data;
   try {
     const tempPath = `${DB_FILE}.tmp`;
     fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
     fs.renameSync(tempPath, DB_FILE);
-    // Background sync to Supabase Cloud
-    syncToSupabase(data).catch(() => {});
   } catch (err) {
-    console.error('Error saving database:', err);
-    throw err;
+    console.warn('Could not write to local DB file (ephemeral serverless filesystem):', err);
   }
+  // Background sync to Supabase Cloud
+  syncToSupabase(data).catch(() => {});
 }
 
-// In-memory active tokens session store
+// In-memory active tokens session store + Stateless HMAC token signing for serverless lambdas
 interface SessionUser {
   role: 'teacher' | 'student';
   id: string; // 'teacher' or studentId
@@ -358,14 +393,42 @@ interface SessionUser {
 }
 
 const activeSessions = new Map<string, SessionUser>();
+const TOKEN_SECRET = process.env.SESSION_SECRET || 'gvcn_secure_serverless_secret_key_2026';
 
 function generateToken(user: Omit<SessionUser, 'expiresAt'>): string {
-  const token = crypto.randomBytes(32).toString('hex');
-  activeSessions.set(token, {
+  const session: SessionUser = {
     ...user,
     expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-  });
+  };
+  const payloadStr = Buffer.from(JSON.stringify(session)).toString('base64url');
+  const signature = crypto.createHmac('sha256', TOKEN_SECRET).update(payloadStr).digest('base64url');
+  const token = `${payloadStr}.${signature}`;
+  activeSessions.set(token, session);
   return token;
+}
+
+function verifyToken(token: string): SessionUser | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length === 2) {
+      const [payloadStr, signature] = parts;
+      const expectedSig = crypto.createHmac('sha256', TOKEN_SECRET).update(payloadStr).digest('base64url');
+      if (signature === expectedSig) {
+        const session: SessionUser = JSON.parse(Buffer.from(payloadStr, 'base64url').toString('utf-8'));
+        if (session && session.expiresAt > Date.now()) {
+          return session;
+        }
+      }
+    }
+    // Fallback to activeSessions map
+    const session = activeSessions.get(token);
+    if (session && session.expiresAt > Date.now()) {
+      return session;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
 }
 
 function authMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -375,10 +438,9 @@ function authMiddleware(req: express.Request, res: express.Response, next: expre
   }
 
   const token = authHeader.substring(7);
-  const session = activeSessions.get(token);
+  const session = verifyToken(token);
 
-  if (!session || session.expiresAt < Date.now()) {
-    if (session) activeSessions.delete(token);
+  if (!session) {
     return res.status(401).json({ error: 'Phiên làm việc đã hết hạn, vui lòng đăng nhập lại' });
   }
 
@@ -1460,4 +1522,9 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
+export { app };

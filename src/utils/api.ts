@@ -29,15 +29,39 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(endpoint, {
-    method: options.method || 'GET',
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  // Prepend VITE_BACKEND_URL if set (for separate backend deployment), otherwise relative path
+  const backendBase = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
+  const url = endpoint.startsWith('http')
+    ? endpoint
+    : `${backendBase}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
-  const data = await response.json().catch(() => ({}));
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: options.method || 'GET',
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch (netErr: any) {
+    throw new Error(`Không thể kết nối đến máy chủ: ${netErr.message || 'Lỗi mạng'}`);
+  }
+
+  const rawText = await response.text();
+  let data: any = {};
+  try {
+    data = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    // If not JSON (e.g. HTML 404 error from Vercel)
+    data = {};
+  }
 
   if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(
+        data.error ||
+          'Lỗi 404 (Không tìm thấy API): Vui lòng kiểm tra xem bạn đã đẩy file vercel.json và thư mục api/ lên GitHub để Vercel kích hoạt Serverless Function chưa.'
+      );
+    }
     throw new Error(data.error || `Lỗi máy chủ (${response.status})`);
   }
 
