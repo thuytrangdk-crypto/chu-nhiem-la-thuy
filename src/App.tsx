@@ -22,6 +22,25 @@ export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Public settings for login screen (cached in localStorage & synced from server)
+  const [publicSettings, setPublicSettings] = useState<{
+    appName: string;
+    schoolName: string;
+    className: string;
+    teacherName?: string;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem('gvcn_public_settings');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      appName: 'GVCN',
+      schoolName: 'Trường THCS Nguyễn Huệ',
+      className: '9A2',
+      teacherName: 'Cô Lã Thị Thủy',
+    };
+  });
+
   // Navigation
   const [currentTab, setCurrentTab] = useState<MainNavTab>('dashboard');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -30,6 +49,45 @@ export default function App() {
   // Password Modal
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [isForcedInitialPassword, setIsForcedInitialPassword] = useState<boolean>(false);
+
+  // Fetch public settings for login screen
+  useEffect(() => {
+    const fetchPublicInfo = async () => {
+      try {
+        const info = await apiRequest<{
+          appName: string;
+          schoolName: string;
+          className: string;
+          teacherName?: string;
+        }>('/api/public/info');
+        if (info && info.schoolName && info.className) {
+          setPublicSettings(info);
+          try {
+            localStorage.setItem('gvcn_public_settings', JSON.stringify(info));
+          } catch {}
+        }
+      } catch (err) {
+        // Ignore network error on public info, use cached fallback
+      }
+    };
+    fetchPublicInfo();
+  }, []);
+
+  // Keep publicSettings in sync when full data is loaded or updated
+  useEffect(() => {
+    if (data?.settings) {
+      const updated = {
+        appName: data.settings.appName,
+        schoolName: data.settings.schoolName,
+        className: data.settings.className,
+        teacherName: data.settings.teacherName,
+      };
+      setPublicSettings(updated);
+      try {
+        localStorage.setItem('gvcn_public_settings', JSON.stringify(updated));
+      } catch {}
+    }
+  }, [data?.settings]);
 
   // Fetch / refresh data
   const loadData = useCallback(async () => {
@@ -118,9 +176,9 @@ export default function App() {
   if (!auth.token || !auth.role) {
     return (
       <LoginModal
-        appName={data?.settings?.appName || 'GVCN'}
-        className={data?.settings?.className || '12A1'}
-        schoolName={data?.settings?.schoolName || 'Trường THPT Chu Văn An'}
+        appName={data?.settings?.appName || publicSettings.appName}
+        className={data?.settings?.className || publicSettings.className}
+        schoolName={data?.settings?.schoolName || publicSettings.schoolName}
         onLoginSuccess={handleLoginSuccess}
       />
     );

@@ -314,10 +314,10 @@ function getInitialData() {
   return {
     settings: {
       appName: 'GVCN',
-      schoolName: 'Trường THPT Chu Văn An',
-      className: '12A1',
-      teacherName: 'Cô Nguyễn Thu Trang',
-      academicYear: '2025 - 2026',
+      schoolName: 'Trường THCS Nguyễn Huệ',
+      className: '9A2',
+      teacherName: 'Cô Lã Thị Thủy',
+      academicYear: '2026 - 2027',
       baseDisciplinePoints: 100,
       conductThresholds: [
         { label: 'Tốt', minScore: 90 },
@@ -464,7 +464,17 @@ function teacherOnly(req: express.Request, res: express.Response, next: express.
   next();
 }
 
-// ---------------- API ROUTES ----------------
+// 0. Public Info (for login screen & unauthenticated users)
+app.get(['/api/public/info', '/public/info', '/api/settings/public', '/settings/public'], (_req, res) => {
+  const db = loadDatabase();
+  return res.json({
+    appName: db.settings?.appName || 'GVCN',
+    schoolName: db.settings?.schoolName || 'Trường THCS Nguyễn Huệ',
+    className: db.settings?.className || '9A2',
+    teacherName: db.settings?.teacherName || 'Cô Lã Thị Thủy',
+    academicYear: db.settings?.academicYear || '2026 - 2027',
+  });
+});
 
 // 1. Authentication
 app.post(['/api/auth/login', '/auth/login'], (req, res) => {

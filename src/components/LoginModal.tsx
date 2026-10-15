@@ -64,8 +64,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <GraduationCap className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">{appName}</h1>
-          <p className="text-sky-100 text-xs mt-1">
-            {schoolName} · Lớp {className}
+          <p className="text-sky-100 text-xs mt-1 font-medium">
+            {schoolName} · {className?.toLowerCase().startsWith('lớp') ? className : `Lớp ${className}`}
           </p>
         </div>
 
