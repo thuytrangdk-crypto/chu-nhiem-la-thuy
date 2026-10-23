@@ -71,6 +71,15 @@ function processSelectedImage(file: File): Promise<string> {
   });
 }
 
+export function formatAnnouncementAuthor(author?: string, teacherName?: string): string {
+  if (!author || author.includes('Nguyễn Thu Trang')) {
+    const rawTeacher = (teacherName || 'Cô Lã Thị Thủy').trim();
+    const cleanTeacher = rawTeacher.replace(/\s*\(GVCN\)\s*$/i, '').trim();
+    return `${cleanTeacher} (GVCN)`;
+  }
+  return author;
+}
+
 interface BoardAndSeatingViewProps {
   data: AppData;
   role: UserRole;
@@ -522,7 +531,7 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
 
                   <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                     <span className="text-[11px] font-medium text-slate-500">
-                      Người đăng: <strong className="text-slate-700">{ann.author}</strong>
+                      Người đăng: <strong className="text-slate-700">{formatAnnouncementAuthor(ann.author, data.settings.teacherName)}</strong>
                     </span>
 
                     {role === 'teacher' && (
@@ -1053,6 +1062,14 @@ export const BoardAndSeatingView: React.FC<BoardAndSeatingViewProps> = ({
           )}
 
           <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+            {/* Người đăng thông báo (Tự động theo cài đặt GVCN) */}
+            <div className="p-3 bg-sky-50/70 border border-sky-100 rounded-xl flex items-center justify-between text-xs">
+              <span className="text-slate-600 font-medium">Người đăng:</span>
+              <span className="font-bold text-sky-800">
+                {formatAnnouncementAuthor(editingAnn ? editingAnn.author : '', data.settings.teacherName)}
+              </span>
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Tiêu đề thông báo *

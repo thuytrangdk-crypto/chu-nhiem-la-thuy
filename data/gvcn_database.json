@@ -1,89 +1,14 @@
 {
-  "grades": [
-    {
-      "id": "gr_1",
-      "note": "Làm bài xuất sắc",
-      "score": 9.5,
-      "attempt": 1,
-      "semester": "HK1",
-      "scoreType": "giua_ky",
-      "studentId": "st_1",
-      "subjectId": "sub_1",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
-    },
-    {
-      "id": "gr_2",
-      "note": "Văn phong mạch lạc",
-      "score": 8.5,
-      "attempt": 1,
-      "semester": "HK1",
-      "scoreType": "giua_ky",
-      "studentId": "st_1",
-      "subjectId": "sub_2",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
-    },
-    {
-      "id": "gr_3",
-      "note": "",
-      "score": 9,
-      "attempt": 1,
-      "semester": "HK1",
-      "scoreType": "giua_ky",
-      "studentId": "st_2",
-      "subjectId": "sub_1",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
-    },
-    {
-      "id": "gr_4",
-      "note": "",
-      "score": 7,
-      "attempt": 1,
-      "semester": "HK1",
-      "scoreType": "giua_ky",
-      "studentId": "st_3",
-      "subjectId": "sub_1",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
-    },
-    {
-      "id": "gr_5",
-      "note": "Top 1 khối",
-      "score": 9.8,
-      "attempt": 1,
-      "semester": "HK1",
-      "scoreType": "giua_ky",
-      "studentId": "st_5",
-      "subjectId": "sub_3",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
-    }
-  ],
-  "honors": [
-    {
-      "id": "hon_1",
-      "month": "Tháng 10/2025",
-      "title": "Học sinh xuất sắc",
-      "confirmed": true,
-      "studentId": "st_1",
-      "achievement": "Đạt điểm 10 kiểm tra khảo sát Toán và dẫn đầu phong trào thi đua lớp",
-      "studentName": "Nguyễn Văn An"
-    },
-    {
-      "id": "hon_2",
-      "month": "Tháng 10/2025",
-      "title": "Học sinh tích cực",
-      "confirmed": true,
-      "studentId": "st_5",
-      "achievement": "Nhiệt tình phụ trách văn nghệ, gương mẫu hỗ trợ bạn bè trong nhóm học tập",
-      "studentName": "Hoàng Thùy Dương"
-    }
-  ],
+  "grades": [],
+  "honors": [],
   "teacher": {
-    "hash": "4ebd0f95a56aacdf80d2e1204228c4265b26b1ba76f9308f4b6d5db42623d7ec0f0431182dba34a971d7134316f21563fdde4b2b48c4cad84bd06dff9c6f390c",
-    "salt": "80fed89320a63def885b996b85dc993a",
+    "hash": "119d58fb784f50b7ba51fa933d6ab0033d1124ef85679fc9927b99868f2de6105df2cddb1ea50012232fef6eb284457fbea3a5f3b9d7e146aaeec87f0f4507d2",
+    "salt": "9bc38c53a01770de25480257dbedeac7",
     "username": "admin",
-    "updatedAt": "2026-10-23T02:22:08.758Z",
+    "updatedAt": "2026-10-23T12:32:24.281Z",
     "lockedUntil": 0,
     "failedAttempts": 0,
-    "isCustomPassword": false
+    "isCustomPassword": true
   },
   "settings": {
     "appName": "GVCN",
@@ -113,13 +38,13 @@
   },
   "students": [
     {
-      "id": "st_1792154981000_zlym",
+      "id": "st_1792760556597_e9kn",
       "dob": "10/05/2012",
       "phone": "0935002878",
       "gender": "Nữ",
       "account": {
-        "hash": "fed9c07ba2fdcadf784a7c6ea122d7c0c27deb925ef2fdf77f9b9d2278758afe1712632945faec6cdc2e27f4eeb662ee6218e249016ed8a96a27d10b964f7b9f",
-        "salt": "5b82e18f6e4149d635c5fde785063d3f",
+        "hash": "cb4aaea93de0e78796f7a99e5fbaef61a0579bae34a7c3aed9c59f0651c0f7a25e84a9f8f97f3a41df204f1487c978ca71bc47bd192766cc684a5c60022e8b27",
+        "salt": "bee7e1f2bf9b1ff008e346fd575a333a",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -128,13 +53,13 @@
       "studentCode": "7922179017"
     },
     {
-      "id": "st_1792154981001_5tth",
+      "id": "st_1792760556598_l0ax",
       "dob": "14/12/2012",
       "phone": "0979301174",
       "gender": "Nam",
       "account": {
-        "hash": "dd4aec319591ceac0f23c60892518b5a2080d8107c29b1f67572a31c3575dfdbc01194a5a66cde356255dd8a6c548c2a9ef7ae904660407e4fb47950faa27e1e",
-        "salt": "e8f217605c5cd960c3d326af8fa36e6a",
+        "hash": "77c6370d9a2b11c765182b43b17bde3d295c62f44623096e06229584586b7991a47a322f7fdc8bc715ab7b9fca3f1115c086adee7a3258fa08806abdb4d4ab1d",
+        "salt": "2fe4eeeea7531185e9864f4bd24d8b37",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -143,13 +68,13 @@
       "studentCode": "7950571052"
     },
     {
-      "id": "st_1792154981002_p9ha",
+      "id": "st_1792760556599_5kms",
       "dob": "15/06/2012",
       "phone": "0932335165",
       "gender": "Nữ",
       "account": {
-        "hash": "58e6a5dc475124f2e1ba1a28bf1681ce0c20f87bde140aedc6637261848eb4682d8d11808209dbb60df6a1d6e0553e48f1e9fe85bd8d44d21ef556444ed34e4f",
-        "salt": "7359d88e9044798a4f1d233ff6c1df06",
+        "hash": "cd633bdb9317017f5f7ead6c630934695c968f20084b25d8533742b3947600fb587e4f9f58526fa2757d3ad8b7088828ae7859320a8b259e07add1898ab5e742",
+        "salt": "c1740311549902444a1d2570875b14af",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -158,13 +83,13 @@
       "studentCode": "7950854615"
     },
     {
-      "id": "st_1792154981003_rjse",
+      "id": "st_1792760556600_yrkb",
       "dob": "25/12/2012",
       "phone": "0906360359",
       "gender": "Nam",
       "account": {
-        "hash": "9f70bf19dd68a69f8832a4b7dcd8712e10d8d872585d7ecf92e1dc9ca81866089f84581b9a5dc6f47a1775d8c50519f2efb7a009d84407925a63cedddbb7c54e",
-        "salt": "77e9b0a0bb68f1fbf43c68a1edafface",
+        "hash": "59ee64d958247cd643ca928781eb1bd8576a9b5653169b442206715e096832c340b0a6a529cb7723acba79937e9f9af9af1399ac822fd2f4f0066a719035dc97",
+        "salt": "d63dd392e285ab9621728cf650bc6143",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -173,13 +98,13 @@
       "studentCode": "7936121550"
     },
     {
-      "id": "st_1792154981004_7lya",
+      "id": "st_1792760556601_qq7g",
       "dob": "01/11/2012",
       "phone": "0908808069",
       "gender": "Nữ",
       "account": {
-        "hash": "a64dd7679b519cfe7896b78a1b917fbef462a31e216f15806c320154622230ff9d9d9335ac1098308717a051346a2a46e218158b5b49cafdd5056b6428eba8dd",
-        "salt": "f5f1ec86ab9eac32393e4f0b4b7eb7b4",
+        "hash": "11013f86c7bc8e43e040654bfbaef4a68f17af1310470918cdb8051d0eb9602133497ede1e8cc5f281e0a44304c00c245b75324d2317924767c1c2f211db5026",
+        "salt": "ea81595cdbca914093804ebbd6f2eb2a",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -188,13 +113,13 @@
       "studentCode": "7936114061"
     },
     {
-      "id": "st_1792154981005_z4k5",
+      "id": "st_1792760556602_hsu3",
       "dob": "09/10/2012",
       "phone": "0908688019",
       "gender": "Nữ",
       "account": {
-        "hash": "0a2b909c54ff7da59ba605b10b907ef56391516d19cd5d7ae4348c1665166488cbb9cd77c37348aada88e0ad9ba22c166f07fd38c6ef08ba5d2b19026c17a0c7",
-        "salt": "125f350e3fb0036abc43c115a71c74ec",
+        "hash": "38b6cf660c8f0c7b1621a4cf83c74bd670a76ba8da2407a7b8522d74fd52286cec72483ff0d5c49c274b96ebbc03e006c3aef804ad161c41163b180aee07dcb2",
+        "salt": "a3e1d693824574eba7b263d9538cba94",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -203,13 +128,13 @@
       "studentCode": "7940184215"
     },
     {
-      "id": "st_1792154981006_c8vl",
+      "id": "st_1792760556603_cxrp",
       "dob": "16/10/2012",
       "phone": "0932009910",
       "gender": "Nữ",
       "account": {
-        "hash": "8aef9f2ebcc3fbb861bf37380822967d623663af9dfd6d730173fb7b91878e73bf9e76e0bdf2f227862422d9daa013daaaeafb2bf73974171ae1754c9ee2175d",
-        "salt": "6f0cf5115ea4e62f3c92255a4156a097",
+        "hash": "d778244cfd95939ba0d50edd2c965b0cc27b66d6d62356edda8434f57107f777757b88240ffa63dbad8a1f9e295ce77058517b7a7688ebda8d0664cd12ffef96",
+        "salt": "40b84ae5681f90b0db98963aff2e02c1",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -218,13 +143,13 @@
       "studentCode": "7977976954"
     },
     {
-      "id": "st_1792154981007_i0kw",
+      "id": "st_1792760556604_0sx1",
       "dob": "21/07/2012",
       "phone": "0976594088",
       "gender": "Nam",
       "account": {
-        "hash": "a533d92f3a3e086f80e314696088b889b16be44bee8fd67d3674256a2308e21a1417f9acc167878302896702085bcd2612d679cfa6b873650424f3e0d1965fcc",
-        "salt": "e3783470a606be4247ca70ccec3c6c97",
+        "hash": "21735199badf7e316ed34be5eda00072f6a96d1dd9db8a6a3cb572f68cc4e0efe61dee991a37ff245d79f60252d4e18e526ba3182552818e1b85c55055de4e01",
+        "salt": "4ff9ca48f5d3d8d919b5e48b93dbe51c",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -233,13 +158,13 @@
       "studentCode": "7936113718"
     },
     {
-      "id": "st_1792154981008_49w3",
+      "id": "st_1792760556605_6qv1",
       "dob": "28/09/2012",
       "phone": "0973327329",
       "gender": "Nam",
       "account": {
-        "hash": "b163075aec9086e37179abbd9e519da7dc15ced581ea6679b6c4d8d9089119b22d925973eeab6a9c9cb460bb54bf52d4975da343197043d826fefd351fed4ae0",
-        "salt": "a896dc8066a6b0754b7e58bc0003667b",
+        "hash": "dbd18a6e6bcd23a2d4631146f040104a7bc765b398b08e5d33aaa2ee881ddb34d4a2cf9f3b6701f8a66679db0181f26ef75e83b30456268f298fbecdc63cc222",
+        "salt": "6da16735bf9b6e053da2caf1db06d46e",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -248,13 +173,13 @@
       "studentCode": "7919199944"
     },
     {
-      "id": "st_1792154981009_mq0j",
+      "id": "st_1792760556606_6r2x",
       "dob": "13/03/2012",
       "phone": "0909945128",
       "gender": "Nam",
       "account": {
-        "hash": "087d712078a15eb51cf1e46f354c1dc06cf37076daa5df445282a56c0103dc85aba270af6f98c7f5fdabf41e4fbdd7a3e290c70fc430b04fed07eb2bf65d48db",
-        "salt": "2481250ba5bdc22f09310258d014e298",
+        "hash": "1dd24e998f1ab008cb2954eee6c8006c38aa2d867fb972c45b63e7fe16c8d3d52c94252255fdfb0108dc1b4faaf633b5e627f5d42d500f1996fc6ffa5090db50",
+        "salt": "4531103f1d215f99fcd78a64fe97ddcf",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -263,13 +188,13 @@
       "studentCode": "7936113557"
     },
     {
-      "id": "st_1792154981010_aski",
+      "id": "st_1792760556607_9mwy",
       "dob": "16/03/2012",
       "phone": "0901304479",
       "gender": "Nữ",
       "account": {
-        "hash": "31d86e88d86ef835320f96bbeba9d8e8633b2af707ea2c4cd8a935268aaeca5b58bf0c9b0f7b0e6e0ddbe8d4666bd148f1844611e87aa878a09676fcb8497a71",
-        "salt": "08995674dcaf6b664a20c546c27d4ca8",
+        "hash": "d586d0802faef42ce00ab105f4fa486f46a11f886c5975fda1ceac7ccdb3e656ec20b81883b80c11324a00994d79ac0a78c52d649d2b4b4fda913418861f9bed",
+        "salt": "cefaff39aaf93a58f99f31730158163a",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -278,13 +203,13 @@
       "studentCode": "7936119543"
     },
     {
-      "id": "st_1792154981011_hba6",
+      "id": "st_1792760556608_rft3",
       "dob": "04/01/2012",
       "phone": "0983930993",
       "gender": "Nam",
       "account": {
-        "hash": "91e73798a644d31c07b9ae82143e8f440de010610a8d974a27b6f1414f8df0cd80ac32f669f2d96cd91569705363772eea7a99838ba5ebc77d60737000d27e8a",
-        "salt": "61bd70b5fe97f758640020137624d456",
+        "hash": "f8833b473081468e9af5205ebdc43c40410039c8822d89997575c9b2487567bf65ad7d3cc693696f67ebbae804b6cb7fa035b6ef90b526086dd5ada699165821",
+        "salt": "c4d079d21f407a56c377a565eaa7374d",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -293,13 +218,13 @@
       "studentCode": "7950571109"
     },
     {
-      "id": "st_1792154981012_j3cm",
+      "id": "st_1792760556610_t41w",
       "dob": "12/06/2012",
       "phone": "0767994579",
       "gender": "Nam",
       "account": {
-        "hash": "c38b85f27d08fb5252440251f2420c3145f31a2fa169b1d7b8b160eebe6a0eaa213c801388ef2e3110b46d807c79b56aeed512231be2c7eb3096e11a85fd440a",
-        "salt": "0bfbc4b984b3a369ec76fe94930d4224",
+        "hash": "5b4b6875a00a40f052ad07d76ba704b85531d79cc8227f3de48f54334577c2e67366cc52a40f37fb230d6cf9eb2b83e30dc5c14a7253bce88ed7c0f731f1da2f",
+        "salt": "d663bc5019e9fd1f42d3331b83caec74",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -308,13 +233,13 @@
       "studentCode": "7933172581"
     },
     {
-      "id": "st_1792154981013_y72l",
+      "id": "st_1792760556611_6xbf",
       "dob": "05/12/2012",
       "phone": "0908053402",
       "gender": "Nam",
       "account": {
-        "hash": "e689a3913456de066e553fe281fd2dc897d5bade3f07cd00d8544b50cf4deb13f2663676457d52f7156fb8f1dbd0a145b721cc86920610794611f983f9a424ad",
-        "salt": "9c2378ee7b479911e3d33d66a613fc6c",
+        "hash": "434f97291c8c152168e588b6665bfc5f264bdd445410dd9501a8bdb14fa4b9a9453ac6947b932b4ecef34ac81c245172c6d2c39ae71d0502e7a0354dc1cfaf3c",
+        "salt": "2ffa680c228730dcd19b269116730a63",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -323,13 +248,13 @@
       "studentCode": "7950571267"
     },
     {
-      "id": "st_1792154981014_uhte",
+      "id": "st_1792760556612_jdhw",
       "dob": "13/10/2012",
       "phone": "0988650449",
       "gender": "Nữ",
       "account": {
-        "hash": "6ffba36bcef8ff818924625be2f4648355936c2f71a72e2c0e42ca048eb823eef9fecc4e6d5a7b5d3b4557a4a461da91edb92c112a7568239be11d3268684c97",
-        "salt": "832aab803fafc9317a23b004ee1a1861",
+        "hash": "77b7ccc38c1a9240579251b0872ee3849339cecbee62f59d77846ca5df7b56cbf4cebc497a48417c482ef161336f39d0a5045ba0120663cbe50fb52c2e267d4f",
+        "salt": "248c3ebc0e0e5f6ee70b58a1cb2b4a81",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -338,13 +263,13 @@
       "studentCode": "7950571013"
     },
     {
-      "id": "st_1792154981015_usgh",
+      "id": "st_1792760556613_i7v2",
       "dob": "27/03/2012",
       "phone": "0909317018",
       "gender": "Nam",
       "account": {
-        "hash": "f58f84662bad9cc667ea0d92f0c52dda02221f030a5c0aaaea47c38ee04dad3cbf5ecb14014ada3430d3e810d8bd7e6798c4c4476f4d5516d9487e45a0c58f6b",
-        "salt": "5d30fd3365073d8187eeb17a060c0b02",
+        "hash": "321f9624034a781acd2e9833bdb151d2809ec4bfff111006d24d2ae0d7f2f4fdacbf50eaaa469bc73627ac38fa0dc0676380c18269fbca07583e964111b3f6c3",
+        "salt": "55ff2ccf43860acf04e839347af3a2c5",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -353,13 +278,13 @@
       "studentCode": "7936113729"
     },
     {
-      "id": "st_1792154981016_s7lp",
+      "id": "st_1792760556614_oifm",
       "dob": "28/08/2012",
       "phone": "0902616710",
       "gender": "Nữ",
       "account": {
-        "hash": "54f9ebb6bcdf4265979188e724c9b4784245ba287537d99c32acfea59b9a531a70b3cd12d912b15ffc8a45b12026a102f44835035e265426c56898a61c4a543c",
-        "salt": "8811a6eb9b6d66f4abc733586a575f5f",
+        "hash": "ebab38f27a875934ec8f3108af3b4a642c8cb034e73abbfbdd56c6b78af026151cb1082361c59753272e5d241c69d2a4ce0091b80d54ffc85e69bb5289a0aa1b",
+        "salt": "69d72c6023631d5317eaafb400cce7d3",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -368,13 +293,13 @@
       "studentCode": "7925854692"
     },
     {
-      "id": "st_1792154981017_w1aa",
+      "id": "st_1792760556615_2814",
       "dob": "14/08/2012",
       "phone": "0567891099",
       "gender": "Nam",
       "account": {
-        "hash": "1bffe759c39c95e2c31cf24c086f7b119c5c50470189031e08be955415b046a63aa8141320d4916363030c4d1b677ced5743fb20276837e553bcc3926b10ac0a",
-        "salt": "696e53473efe77ea492ef23844dbc6a3",
+        "hash": "09bfa364c4154b1e4a391415a9f11abaf6f1bec6c524a1fe1f5cc9d2bd76ceb2b6d7bf82dda1c5b0d8cec72e4485fc4bb5f59d36d22447f4fb8c4e932407d494",
+        "salt": "097c94065d23a33c125c5c58f43b5a9b",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -383,13 +308,13 @@
       "studentCode": "7936113744"
     },
     {
-      "id": "st_1792154981018_oqp8",
+      "id": "st_1792760556616_wu87",
       "dob": "22/01/2012",
       "phone": "0932612063",
       "gender": "Nữ",
       "account": {
-        "hash": "655a59b8902d2f1c972d402ba19ddcb1279427754cfcd25f7b4d8ccfd60bf8cd8d134db636c97fd3470ca1fe74ad00cb725c69b1c7b48dfd87ba23649e9c0d03",
-        "salt": "2ff5b5ba34f3e8e47027f3c14da4131e",
+        "hash": "008e60b985e246063c03bad2630bd2adbb8321e45c5a1dc9ce42113fd06cacc4a07a7c17907dbc79f94bfc43db2c013c6a0a7305f70bf15122b55cb9b460d7eb",
+        "salt": "d4cb6c7a13520dd10bf348c15968a4a0",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -398,13 +323,13 @@
       "studentCode": "7936120446"
     },
     {
-      "id": "st_1792154981019_x9sf",
+      "id": "st_1792760556617_u981",
       "dob": "01/12/2012",
       "phone": "0902153541",
       "gender": "Nữ",
       "account": {
-        "hash": "617af5f6192134497842bfb34a6def08e65d1550a4a5963d44cca7e7a513d81d9e8cbe61b26e593663e386095b06e46bc6065e84ba45046187ab08c5f3cf1385",
-        "salt": "ad614b2728db5280c68f3c0a5f245e6b",
+        "hash": "a9179249c22bab735cd60748afb7a2b8e73d7abd8fb4655c3ac00ae96b722ef443230b84e16fb16d1d7bcc8398825a7a616335f0345e2cc3d0d2da2d0a472b3b",
+        "salt": "010bf7a8b44a10fec64669ffd6f3561d",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -413,13 +338,13 @@
       "studentCode": "7936120099"
     },
     {
-      "id": "st_1792154981021_vb26",
+      "id": "st_1792760556618_cgpu",
       "dob": "27/04/2012",
       "phone": "0903901048",
       "gender": "Nam",
       "account": {
-        "hash": "bedc4b8c4d5ccf6c2fe8c1c133f3f2f713ea0747583505498fa9214630247bc184f1f3dac191ef1608f508f3ae1c0b149b84f62c3890d9daddc4fc9d3a6b6b12",
-        "salt": "3a8658a041ed746559c3766b884106f4",
+        "hash": "ef771a96ccb845e618f86b264e79a1158dbbaa9a50fc5da944e47c2168fc4efba22dc67b7fcec60ee88021be55a19360b5204150ec9f0064bbc438ef98d42987",
+        "salt": "15efde2b9a3be1e702ea19dcefdd6a3c",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -428,13 +353,13 @@
       "studentCode": "7925855755"
     },
     {
-      "id": "st_1792154981022_qli3",
+      "id": "st_1792760556619_j5jg",
       "dob": "09/08/2012",
       "phone": "0902717978",
       "gender": "Nam",
       "account": {
-        "hash": "787caf5f72f446c2af3e3bb4a26fa82ff86576b1f28782150ce65b9760e624a2321d3dd60af61dd48e7a45392d0beef4f1ef4fd7fb51ab39e2a3e0fa614406b6",
-        "salt": "2461ae6ea85de238ae5c1c2c518cc6cb",
+        "hash": "fa5a2ae4fe50fc5fbd69b92637e815658850e2f1f44b345eab8a8fc8cbe384743f4c199762e81d04a23d4c1e35191099b8a09d5a0214d44f76df328468293ccd",
+        "salt": "551007b63257ba66cb149ba0ffb443d3",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -443,13 +368,13 @@
       "studentCode": "7936120372"
     },
     {
-      "id": "st_1792154981023_t4vh",
+      "id": "st_1792760556621_8eml",
       "dob": "19/10/2012",
       "phone": "0903136427",
       "gender": "Nam",
       "account": {
-        "hash": "31a03b2f1d8e0db7fb38b9f05f4d839b98859e8c12c2cb2d2f2de63199488d916b606f309348860d0e8eecf5329870188f95df3b884b80b991f93f9ab9edf904",
-        "salt": "539b89215f1812f27d59e2c10ce265eb",
+        "hash": "42d19160de06f3407888a207c177692184ce62ff397fa1865439c6c944517d433665dc9fa024a5fe7d686f6870ad969b9918e7faa8a5cceeb9e21be0046f20a8",
+        "salt": "56c4865b7e34d435951abaa5063806a8",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -458,13 +383,13 @@
       "studentCode": "7925856218"
     },
     {
-      "id": "st_1792154981024_41wn",
+      "id": "st_1792760556622_imsh",
       "dob": "31/07/2012",
       "phone": "0939783031",
       "gender": "Nữ",
       "account": {
-        "hash": "028d8bcea34c252ee41e9e1bb1f0aefa6defa832be8b439e955b2e4c2991c7e35720e55d66d39f0719467514c759c532195a3d43187dea20a99db91b57bdb9d4",
-        "salt": "65f7a2c5c3de682485af55470ba8a4e1",
+        "hash": "ef81da1e00f9e907f7c35ffd69c3dd6b02d8194590737959d64b0b85c7aac94fda2c82a79b770231393dcb76de1af5a76dfcde5581086e7a74202eaeaa0f072b",
+        "salt": "8e62c5e4949c1bfd757caf9b1b8e5c7f",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -473,13 +398,13 @@
       "studentCode": "7936120655"
     },
     {
-      "id": "st_1792154981025_ycy7",
+      "id": "st_1792760556623_16i8",
       "dob": "15/11/2012",
       "phone": "0947776939",
       "gender": "Nữ",
       "account": {
-        "hash": "287f5e4029f59efdf5d3db3d723c6a9b8db7cad546aba4962090c187e1e65054bef5f2ab789e7af8e2e542113c35613d5afb0770e32fe648ddd2dd104fb02476",
-        "salt": "384d6631bed288a65500834ed3b1aac9",
+        "hash": "769c05a493a7d467ba32fab71046ec3c3dc3adc27019143b20cb72dd926eb112b6a39115709346578c55dcedd0437e49ad42495be7f00e704d810608e1fd9cd6",
+        "salt": "74dbb471342eefef150a555d775d82d7",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -488,13 +413,13 @@
       "studentCode": "7981124246"
     },
     {
-      "id": "st_1792154981026_2av8",
+      "id": "st_1792760556624_rmcr",
       "dob": "16/03/2012",
       "phone": "0908847711",
       "gender": "Nữ",
       "account": {
-        "hash": "800133c667f42b575505d5bb7844b3c9b3b6105c71ee900ba04a81206cd4a0bf968a749d8f66f781e845281a6c76a0f3ac9d3b674bdefcd0a22b9d7a6edc9f8b",
-        "salt": "f7bfcbed21d1f719b0ea55acb9ec2638",
+        "hash": "02528008971b35bed76cfd1bd05a2887b0371db2800970d2d3749d0161e218cd7873e8c96292f180565a0345d820e7997e29febb1c1203ddd71f71aec498857b",
+        "salt": "f6893f0242c3c96ad99782be43489003",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -503,13 +428,13 @@
       "studentCode": "7936120657"
     },
     {
-      "id": "st_1792154981027_2kxl",
+      "id": "st_1792760556625_w4zs",
       "dob": "10/04/2012",
       "phone": "0908167676",
       "gender": "Nữ",
       "account": {
-        "hash": "b3783faf9629d4b431b1092c146fdcb936be6daf304251c3eeb042ae0b6872c1d964b0db12850e66626a735f39cb43bfea62c2268fcf9ea582e9e50c29a605c5",
-        "salt": "ee92e880b9f9f1a7e32ed36a548ae163",
+        "hash": "ce775691f3ab63291cf948047a786ab2d614726ed4b9265fd0dcec5ee10a8530c4518fb8dcdb20fc8973f80eeb3198967e41a8055e3d399f2ad541ea956ea5c9",
+        "salt": "88a2942ff147042af84588b428a39939",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -518,13 +443,13 @@
       "studentCode": "7925856174"
     },
     {
-      "id": "st_1792154981028_l9wd",
+      "id": "st_1792760556626_xt19",
       "dob": "04/01/2012",
       "phone": "0982796670",
       "gender": "Nữ",
       "account": {
-        "hash": "6c5c6295cd8a807b85280da39d12fef6b7fe1f2da04dcd12a28f359fa1f1899fc1ff49f8116d4b886546995cc9d32bf0ec89d81f0f4677df613018bf28ac497e",
-        "salt": "25cd4615de231720252731a7a98700b0",
+        "hash": "679d51282eaa0bbb71e304740e98d2be9b8e56fdd60c052331f5954aee7b5032b1858687ed17a83ac44db75a83c20e5d8c42ca1e5fa3c2e59c33a06d8dcf19d1",
+        "salt": "38b2781954a025b8d5d3b39ee9a4a545",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -533,13 +458,13 @@
       "studentCode": "7936120729"
     },
     {
-      "id": "st_1792154981029_dwy1",
+      "id": "st_1792760556627_nxcz",
       "dob": "16/09/2012",
       "phone": "0909797776",
       "gender": "Nữ",
       "account": {
-        "hash": "bf5c2ac288af409b7eedadd2369244e360247045c3a8e9c56d4ed7ac55afd47c674ed2339f039539307f6ab85e73ab0fec553dcdd0d042f3d3f43b303fbc508f",
-        "salt": "ceb20c8d3e7b6d12edd474c4687be81b",
+        "hash": "0fc140000a43990555bf7fbf0d1ad871baa3d837e33666cb0236ff16a74cb76a96f1b287684dd6062afa7540bb98f0a1f4654a4f32d8346e6603f6bedf7b2f61",
+        "salt": "1d8817394b9a091923a57e7a8952b10b",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -548,13 +473,13 @@
       "studentCode": "7950571085"
     },
     {
-      "id": "st_1792154981030_aip1",
+      "id": "st_1792760556628_oaza",
       "dob": "29/02/2012",
       "phone": "0909468439",
       "gender": "Nữ",
       "account": {
-        "hash": "a1f1b02f364be55af8e563cad36cd982c030ad4e65db4218924b8727e411826a0644bd3af0bef698126f46bbbbfe60d5cfbcc732b3c853e1589513cf70066999",
-        "salt": "498eeae9cf44c0802a08230b1d546b15",
+        "hash": "704a0eda2b4bfb7727af4db694cabb127e0022d3b837e02a031843dee9d6492bff9112832f2a8e65d6bafa901934a0ec6dd86bc3eaef12b653260940a756d7ff",
+        "salt": "dc63343e385281991299be243b2d2fe1",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -563,13 +488,13 @@
       "studentCode": "7925856944"
     },
     {
-      "id": "st_1792154981031_xpex",
+      "id": "st_1792760556630_he5w",
       "dob": "17/09/2012",
       "phone": "0902764639",
       "gender": "Nữ",
       "account": {
-        "hash": "66c16a7157e556cb1bad947aaff4aa6be9e4a16d1c43d3c67d021070f5066678e1a4fcc4a111afae57b1fa4830e13a76d1eafa9f14f4acbb171a3787225506fb",
-        "salt": "62075edd6e6dea1d0bf0a8cd85665a8a",
+        "hash": "b0b2a0063182b4f77e659508dc87ab277579c04705620ee768f9a4509ed89db4c696923a8c7f04a1686efd5c6e7b652b6c54d99fce7ce7e59a4626b28611aeb0",
+        "salt": "d4c4ec128481f6cd252e9f66f2fe8d1b",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -578,13 +503,13 @@
       "studentCode": "7936113584"
     },
     {
-      "id": "st_1792154981032_ys40",
+      "id": "st_1792760556631_jaao",
       "dob": "22/11/2012",
       "phone": "0915090008",
       "gender": "Nam",
       "account": {
-        "hash": "469ec2850a32b04990d59f9753456d2218be936e41b7ccbcdde848282510d8e27522362586d861e52e86e1c9f1c63ef0d8e9d0e7d3e12efb8380bfd9c214e9d4",
-        "salt": "81efc2b4c9c44bd4a4a6b5524aef7b2c",
+        "hash": "117e0d15a2aa2e88666488e1f4803d12d69267115b50b4b34e82776e968bc9718e962241a73514c728969121945bd1c77ecd1b967b7fa02da166b986f3735e0b",
+        "salt": "c90ab286fdf39cc20e2eb706fe050e19",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -593,13 +518,13 @@
       "studentCode": "7936121146"
     },
     {
-      "id": "st_1792154981033_gjdn",
+      "id": "st_1792760556632_2qk9",
       "dob": "11/11/2012",
       "phone": "0902995707",
       "gender": "Nam",
       "account": {
-        "hash": "a09261523118c6e3cca165fffcf3a30fb19ffc02d7839bdc371ed07e3a7e8f2d860063999c2a3c0b4121c4acc824aa95e9f3e1360b37d9f854a3e4c35d7faecf",
-        "salt": "a625bb58c122e6f4aa976fbd7dc69ea1",
+        "hash": "c6c4ae93cbf79bb7c3feea88c729808915cb3d32df42d41bd82e5b73cf89b26460dc4dadc483bbd84ce6e8023d0c6207fe56c90a2971d25b886aa77b9197c6bb",
+        "salt": "60aedbed380adcc4c8f2258964ec4d12",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -608,13 +533,13 @@
       "studentCode": "7950571031"
     },
     {
-      "id": "st_1792154981034_8g6p",
+      "id": "st_1792760556633_v7au",
       "dob": "26/10/2012",
       "phone": "0909399327",
       "gender": "Nam",
       "account": {
-        "hash": "83bdfbcbe6ff6a9ac4fc0cbc198842930ddaba8b7bb215bc3054f57e39665b17315fbade426e8cda8532ddf4d4d8f8c4a93d84511fe8dc4b2874c5a072659588",
-        "salt": "c07124f28bde4e413841ccc405669f7d",
+        "hash": "fbb705830275970a872bec34390aefb6774036d475cfb2dbd663d45dcfe331a8e324bace454e268c1a0da427abab5adce8efdf4498890ca4adf4fa231a6ff36f",
+        "salt": "d731e690d9f852db0b6534a02e15f044",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -623,13 +548,13 @@
       "studentCode": "7936113597"
     },
     {
-      "id": "st_1792154981035_6ta0",
+      "id": "st_1792760556634_tzgq",
       "dob": "13/09/2012",
       "phone": "0916330505",
       "gender": "Nam",
       "account": {
-        "hash": "1453fec9d0920b402d8a616cd7b1e8923faf9b2e581bd24fa4ee8b84d19f944f84a5fcc01c4b6c6b8a35f63da1f42cebeddbe5578f222d39abcfb218c165e672",
-        "salt": "e8a0fd0ccb3658f28754e8bdf1d5ea8c",
+        "hash": "3feb7c8b29a44b6d81849b2f3b5f91dec52b2f0d6ebd8ab80091e5226fe1f2727d32a75ff1835775e6c83c8303b2b88a7ee0f7a544f37f2ce76521b0514a4824",
+        "salt": "0fb7b929f747a629b4277de96c6aa779",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -638,13 +563,13 @@
       "studentCode": "7950570503"
     },
     {
-      "id": "st_1792154981036_6tpj",
+      "id": "st_1792760556635_ks36",
       "dob": "23/10/2012",
       "phone": "0938707478",
       "gender": "Nam",
       "account": {
-        "hash": "beb23fd029e3a0fd96c55cbe5d0f1d1d0431892b1868f046779416390d028f0ec3a56d9d7beecf4750c4832f3c5b711e103aae6fe01d2d0296336df7b9c9d12d",
-        "salt": "5cd7cf798a9cd2ec0a4ccc89e953d174",
+        "hash": "aae6ca2eaa98209f18e506b91c6267bee552b5bc92371317aa2414f4621283418d5660ed4e48b6de8a006c44490b984ee4d02534ef34e4a325cf385a1fe50909",
+        "salt": "b52f4f7c90ae590d7c716b6b392ed5ec",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -653,13 +578,13 @@
       "studentCode": "7936121284"
     },
     {
-      "id": "st_1792154981037_2o9h",
+      "id": "st_1792760556636_7v22",
       "dob": "01/09/2012",
       "phone": "0909498294",
       "gender": "Nam",
       "account": {
-        "hash": "be7649079db26a72fc7d6c5a4fdf2c2a95ffb92fcdaecab98411c44d541ab50322c9badf57efa61896d613c57750e0aecac6a4aaf81db3b17bb2cf81eb240407",
-        "salt": "bb389f2c08dac296da432762d593c50d",
+        "hash": "93e76724ea0fd237cc0fa11b037d05d645e24bf8816e587243a5b690d5612b4acba7bdfae12472974042849c1632fe532f8486157b7d580ac01a0462f1cb7ae3",
+        "salt": "1a8039b326be610e2d214bd5ad071448",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -668,13 +593,13 @@
       "studentCode": "7920557275"
     },
     {
-      "id": "st_1792154981038_c04x",
+      "id": "st_1792760556637_1jx2",
       "dob": "15/04/2012",
       "phone": "0989727674",
       "gender": "Nữ",
       "account": {
-        "hash": "f6a83199998e3df0597537b7e87cde6983c38e6b5b2fe92fb7762d7c43fb02c7b9b79a1fbcc7242ba2f25b45e5c32d34f09dada6d6fcb6e706d46d026a261990",
-        "salt": "24eba1c16ec0b9f203e4a765c944ed39",
+        "hash": "d3eee8dbac0ef6b6d285109132819ddd1201f984a90906d9f00ad96aab9c022a2d4e9c2e2cf2836aef09b2570755f5f8c921c8b87ecd8a2485ebeb7568143333",
+        "salt": "3ac22d3c7a76951a615f2bf7ab61b870",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -683,13 +608,13 @@
       "studentCode": "7536114017"
     },
     {
-      "id": "st_1792154981039_43pr",
+      "id": "st_1792760556639_6lob",
       "dob": "17/11/2012",
       "phone": "0934112499",
       "gender": "Nữ",
       "account": {
-        "hash": "9d006c6cf94d207cc5cc8b6f9ed539d0e107f1e2f2d078a6d005d05574b02479786cbff92babd82c219f0a01ecf35e7939c1e50c803dfd96d9eff931bb1668a1",
-        "salt": "04b2eeec64a9ebd80a88f661b913b029",
+        "hash": "c62a08b66c9540119c7ef0732262a44a1de0ca816a9bbb4850ada7c671718c822084b48c6e06e00f0b562bc467f84711e9bb5fce7ee465248b4a47ed49314f5e",
+        "salt": "1d353174d4d9923096cbd21023fbe99a",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -698,13 +623,13 @@
       "studentCode": "7927077124"
     },
     {
-      "id": "st_1792154981041_cbse",
+      "id": "st_1792760556640_xt3e",
       "dob": "03/08/2012",
       "phone": "0778639670",
       "gender": "Nam",
       "account": {
-        "hash": "a3b91ace9d75aaac6fb8545eb14efa2c911fa824287003b084da3d481d6b7addfc4385560ef2239f5b14a86a9821d65d4d923af82938e3b1050748c31400a4fa",
-        "salt": "7aa9ff71025f2a77c4abd441f052c077",
+        "hash": "6df520555b5ee7b37ca3f5cae4c4165d6bd9a63f8bf710317a5824ab3003e90122991b700f4c61ccf31e09f3f66fa62a7dbd95a88ed909cfbf0e514b07ca1769",
+        "salt": "e81373cd95a4021fae5ec42f249b394a",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -713,13 +638,13 @@
       "studentCode": "7936114229"
     },
     {
-      "id": "st_1792154981042_2al5",
+      "id": "st_1792760556641_5z9w",
       "dob": "18/10/2012",
       "phone": "0988203219",
       "gender": "Nam",
       "account": {
-        "hash": "ea629d475f31ce11c7ee32d333286d415f3871412e35f4806c09675c9e2dcea6b2a8954d771c990ae0ea41c639924046eee81c6b0a60bf66f4aec9150e33f5c2",
-        "salt": "463f3b20f765ff3e85743ef50edea5d1",
+        "hash": "342da1d45c1d2db4e883e74d1289acd92b1b41782a37caa5ab1a5a066883c9de44d35eaefc5235d1490238a19e4b7f27ee124cb1692bb56b71b7857feddb61a8",
+        "salt": "00285994eb95b48db4878bd61491c8d8",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -728,13 +653,13 @@
       "studentCode": "7936113962"
     },
     {
-      "id": "st_1792154981043_zmx4",
+      "id": "st_1792760556642_1orj",
       "dob": "23/05/2012",
       "phone": "0909005088",
       "gender": "Nữ",
       "account": {
-        "hash": "8b7739973068ad9f9414b0f928e37e4ca2a5f53fba4b14b8433d7959ce1aa94cf8b7ee1745d8dcb9d9f496abbb28d4e16b58974843840f51b76a29b718715164",
-        "salt": "1499934ddb92d7a001de173e92eec1d6",
+        "hash": "c84fc99d328ae1933fc6d60bf97ae1298404db30bc04246153f535fd3d73cb8b07c9ae14c8a61dc1b4c4091ee08ee7873eb49783440eeb1bd1740fc8c5082c98",
+        "salt": "520190b3f63ec34be6dd95eb054d4e7c",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -743,13 +668,13 @@
       "studentCode": "7925859806"
     },
     {
-      "id": "st_1792154981044_arcv",
+      "id": "st_1792760556643_jyr2",
       "dob": "20/09/2012",
       "phone": "0903908182",
       "gender": "Nữ",
       "account": {
-        "hash": "81bd7b214b8d6f0a4cbe42272c86c29f3da3ed258be9ce3c0506c2d51699a27d591daa65765f4c204af63debb1e2755f16bc451df8f7badada444237caaf4647",
-        "salt": "3356ac6b33b8f5e95629b81d4c5ee24e",
+        "hash": "bdea08861243aade745920724325aed787bf45f7125abc4ec6715c2e22893dcf1ff8a412e3109ff7d598c391e472c8ad5cfa5647ca5340baaeb790fc2b8a3dfd",
+        "salt": "dbec03b745cf53fd39e2f239b307dc7d",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -758,13 +683,13 @@
       "studentCode": "7925859704"
     },
     {
-      "id": "st_1792154981045_00sf",
+      "id": "st_1792760556644_z3mb",
       "dob": "02/07/2012",
       "phone": "0938270261",
       "gender": "Nữ",
       "account": {
-        "hash": "122ef7f922f363371796d9111eed96fa0149b36f00ac6e1c3d967e195b95544042449c1d7456e057b737cc52746941e4e8e601cdd4880ece653a20e3d6a6b2d8",
-        "salt": "713fb93f08c1471d8c664d72ceb7f5f3",
+        "hash": "b41d14e076e76e571f23a7bc0b62aa3037a0a51604738edccebb92fdb008139358f13cdc3696fe46899c1bee15d434be438b8f96c3c985ff2d7837951d4f911c",
+        "salt": "f0e7260325e5d73c8db224e68a213efc",
         "lockedUntil": 0,
         "failedAttempts": 0,
         "isInitialPassword": true
@@ -794,38 +719,38 @@
     },
     {
       "id": "sub_4",
-      "name": "Vật lí",
-      "order": 4,
+      "name": "HĐTN HN",
+      "order": 11,
       "isActive": true
     },
     {
       "id": "sub_5",
-      "name": "Hóa học",
-      "order": 5,
+      "name": "TABN",
+      "order": 11,
       "isActive": true
     },
     {
       "id": "sub_6",
-      "name": "Sinh học",
-      "order": 6,
+      "name": "KHTN",
+      "order": 11,
       "isActive": true
     },
     {
       "id": "sub_7",
-      "name": "Lịch sử",
-      "order": 7,
+      "name": "GDTC",
+      "order": 11,
       "isActive": true
     },
     {
       "id": "sub_8",
-      "name": "Địa lí",
-      "order": 8,
+      "name": "Lịch sử - Địa lí",
+      "order": 11,
       "isActive": true
     },
     {
       "id": "sub_9",
       "name": "GDCD",
-      "order": 9,
+      "order": 11,
       "isActive": true
     },
     {
@@ -833,216 +758,250 @@
       "name": "Tin học",
       "order": 10,
       "isActive": true
+    },
+    {
+      "id": "sub_1792759985899",
+      "name": "Công nghệ",
+      "order": 11,
+      "isActive": true
+    },
+    {
+      "id": "sub_1792760005983",
+      "name": "Âm nhạc",
+      "order": 12,
+      "isActive": true
+    },
+    {
+      "id": "sub_1792760021540",
+      "name": "Mỹ thuật",
+      "order": 13,
+      "isActive": true
+    },
+    {
+      "id": "sub_1792760042145",
+      "name": "KNS",
+      "order": 14,
+      "isActive": true
+    },
+    {
+      "id": "sub_1792760059713",
+      "name": "GDDP",
+      "order": 15,
+      "isActive": true
     }
   ],
   "auditLogs": [
     {
-      "id": "log_1792722128758",
-      "timestamp": "2026-10-23T02:22:08.758Z",
-      "action": "Đặt lại mật khẩu GV",
-      "actor": "Hệ thống xác thực",
-      "details": "Giáo viên đã đặt lại mật khẩu về mặc định (giaovien123)"
-    },
-    {
-      "id": "log_1792722112839",
+      "id": "log_1792767671999",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Đổi mật khẩu GV",
-      "details": "Giáo viên đã đổi mật khẩu quản trị thành công và lưu vĩnh viễn",
-      "timestamp": "2026-10-23T02:21:52.839Z"
+      "action": "Xóa ghi nhận thi đua",
+      "details": "Xóa sự việc \"Đi học muộn\" (-2 điểm) ngày 2026-10-23",
+      "timestamp": "2026-10-23T15:01:11.999Z"
     },
     {
-      "id": "log_1792722101473",
-      "actor": "Hệ thống xác thực",
-      "action": "Đặt lại mật khẩu GV",
-      "details": "Giáo viên đã đặt lại mật khẩu về mặc định (giaovien123)",
-      "timestamp": "2026-10-23T02:21:41.473Z"
-    },
-    {
-      "id": "log_1792721995017",
+      "id": "log_1792767478378",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Cập nhật cài đặt & Mật khẩu GV",
-      "details": "Thay đổi thông tin lớp học và mật khẩu quản trị GVCN",
-      "timestamp": "2026-10-23T02:19:55.017Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Vi phạm đồng phục / tác phong (-1 điểm)",
+      "timestamp": "2026-10-23T14:57:58.378Z"
     },
     {
-      "id": "log_1792721984954",
-      "actor": "Hệ thống xác thực",
-      "action": "Đặt lại mật khẩu GV",
-      "details": "Giáo viên đã đặt lại mật khẩu về mặc định (giaovien123)",
-      "timestamp": "2026-10-23T02:19:44.954Z"
-    },
-    {
-      "id": "log_1792721984699",
+      "id": "log_1792767473146",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Đổi mật khẩu GV",
-      "details": "Giáo viên đã đổi mật khẩu quản trị thành công và lưu vĩnh viễn",
-      "timestamp": "2026-10-23T02:19:44.699Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Vắng không phép (-1 điểm)",
+      "timestamp": "2026-10-23T14:57:53.146Z"
     },
     {
-      "id": "log_1792721191670",
+      "id": "log_1792767406729",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Đổi mật khẩu GV",
-      "details": "Giáo viên đã đổi mật khẩu quản trị",
-      "timestamp": "2026-10-23T02:06:31.670Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho HỒ SONG THY: Không học bài, không làm bài tập về nhà (-2 điểm)",
+      "timestamp": "2026-10-23T14:56:46.729Z"
     },
     {
-      "id": "log_1792155199231",
+      "id": "log_1792767400069",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Lê Hoàng Cường (HS003)",
-      "timestamp": "2026-10-16T12:53:19.231Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho HỒ SONG THY: Đi học muộn (-2 điểm)",
+      "timestamp": "2026-10-23T14:56:40.069Z"
     },
     {
-      "id": "log_1792155195667",
+      "id": "log_1792762148708",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Hoàng Thùy Dương (HS005)",
-      "timestamp": "2026-10-16T12:53:15.667Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Không học bài, không làm bài tập về nhà (-2 điểm)",
+      "timestamp": "2026-10-23T13:29:08.708Z"
     },
     {
-      "id": "log_1792155192240",
+      "id": "log_1792762035990",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Phan Quốc Việt (HS012)",
-      "timestamp": "2026-10-16T12:53:12.240Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Không học bài, không làm bài tập về nhà (-2 điểm)",
+      "timestamp": "2026-10-23T13:27:15.990Z"
     },
     {
-      "id": "log_1792155189351",
+      "id": "log_1792762008337",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Ngô Khánh Linh (HS009)",
-      "timestamp": "2026-10-16T12:53:09.351Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Không học bài, không làm bài tập về nhà (-2 điểm)",
+      "timestamp": "2026-10-23T13:26:48.337Z"
     },
     {
-      "id": "log_1792155185492",
+      "id": "log_1792761986370",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Mai Thanh Nga (HS011)",
-      "timestamp": "2026-10-16T12:53:05.492Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: quên sách vở, dụng cụ học tập (-1 điểm)",
+      "timestamp": "2026-10-23T13:26:26.370Z"
     },
     {
-      "id": "log_1792155183067",
+      "id": "log_1792761964104",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Đỗ Quang Minh (HS010)",
-      "timestamp": "2026-10-16T12:53:03.067Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: quên sách vở, dụng cụ học tập (-1 điểm)",
+      "timestamp": "2026-10-23T13:26:04.104Z"
     },
     {
-      "id": "log_1792155180255",
+      "id": "log_1792761912532",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Bùi Đức Long (HS008)",
-      "timestamp": "2026-10-16T12:53:00.255Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Không học bài, không làm bài tập về nhà (-2 điểm)",
+      "timestamp": "2026-10-23T13:25:12.532Z"
     },
     {
-      "id": "log_1792155177522",
+      "id": "log_1792761847332",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Đặng Tuấn Hải (HS006)",
-      "timestamp": "2026-10-16T12:52:57.522Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Không học bài, không làm bài tập về nhà (-2 điểm)",
+      "timestamp": "2026-10-23T13:24:07.332Z"
     },
     {
-      "id": "log_1792155175435",
+      "id": "log_1792761740351",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Vũ Thị Ngọc Hoa (HS007)",
-      "timestamp": "2026-10-16T12:52:55.435Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Không làm bài tập về nhà (-2 điểm)",
+      "timestamp": "2026-10-23T13:22:20.351Z"
     },
     {
-      "id": "log_1792155170437",
+      "id": "log_1792761715187",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Phạm Minh Dũng (HS004)",
-      "timestamp": "2026-10-16T12:52:50.437Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Không làm bài tập về nhà (-2 điểm)",
+      "timestamp": "2026-10-23T13:21:55.187Z"
     },
     {
-      "id": "log_1792155168243",
+      "id": "log_1792761678875",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Trần Thị Bích (HS002)",
-      "timestamp": "2026-10-16T12:52:48.243Z"
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: quên sách vở, dụng cụ học tập (-1 điểm)",
+      "timestamp": "2026-10-23T13:21:18.875Z"
     },
     {
-      "id": "log_1792155164651",
+      "id": "log_1792761670212",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Xóa học sinh",
-      "details": "Đã xóa học sinh Nguyễn Văn An (HS001)",
-      "timestamp": "2026-10-16T12:52:44.651Z"
+      "action": "Xóa ghi nhận thi đua",
+      "details": "Xóa sự việc \"quên sách vở, dụng cụ học tập\" (-1 điểm) ngày 2026-10-05",
+      "timestamp": "2026-10-23T13:21:10.212Z"
     },
     {
-      "id": "log_1792155072106",
+      "id": "log_1792761646904",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: quên sách vở, dụng cụ học tập (-1 điểm)",
+      "timestamp": "2026-10-23T13:20:46.904Z"
+    },
+    {
+      "id": "log_1792761633100",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa ghi nhận thi đua",
+      "details": "Xóa sự việc \"quên sách vở, dụng cụ học tập\" (-1 điểm) ngày 2026-10-23",
+      "timestamp": "2026-10-23T13:20:33.100Z"
+    },
+    {
+      "id": "log_1792761588023",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: quên sách vở, dụng cụ học tập (-1 điểm)",
+      "timestamp": "2026-10-23T13:19:48.023Z"
+    },
+    {
+      "id": "log_1792761421960",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa ghi nhận thi đua",
+      "details": "Xóa sự việc \"Đi học muộn\" (-2 điểm) ngày 2026-10-01",
+      "timestamp": "2026-10-23T13:17:01.960Z"
+    },
+    {
+      "id": "log_1792761412852",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Ghi nhận thi đua",
+      "details": "Ghi nhận cho PHAN ĐÌNH LONG GIANG: Đi học muộn (-2 điểm)",
+      "timestamp": "2026-10-23T13:16:52.852Z"
+    },
+    {
+      "id": "log_1792760556644",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh cũ và nhập danh sách mới",
+      "details": "Đã xóa 12 học sinh cũ và nhập mới 44 học sinh.",
+      "timestamp": "2026-10-23T13:02:36.644Z"
+    },
+    {
+      "id": "log_1792760483049",
       "actor": "Cô Lã Thị Thủy",
       "action": "Cập nhật cài đặt chung",
       "details": "Thay đổi thông tin lớp học và cài đặt hệ thống",
-      "timestamp": "2026-10-16T12:51:12.106Z"
+      "timestamp": "2026-10-23T13:01:23.049Z"
     },
     {
-      "id": "log_1792154981045",
+      "id": "log_1792760274894",
       "actor": "Cô Lã Thị Thủy",
-      "action": "Nhập danh sách học sinh bằng Excel",
-      "details": "Nhập thành công: 44 học sinh mới, cập nhật 0 học sinh",
-      "timestamp": "2026-10-16T12:49:41.045Z"
+      "action": "Cập nhật cài đặt chung",
+      "details": "Thay đổi thông tin lớp học và cài đặt hệ thống",
+      "timestamp": "2026-10-23T12:57:54.894Z"
+    },
+    {
+      "id": "log_1792758744281",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Đổi mật khẩu GV",
+      "details": "Giáo viên đã đổi mật khẩu quản trị thành công và lưu vĩnh viễn",
+      "timestamp": "2026-10-23T12:32:24.281Z"
     },
     {
       "id": "log_init",
       "actor": "Hệ thống",
       "action": "Khởi tạo hệ thống",
       "details": "Khởi tạo dữ liệu lớp chủ nhiệm ban đầu thành công",
-      "timestamp": "2026-10-16T12:49:40.997Z"
+      "timestamp": "2026-10-23T12:31:48.364Z"
     }
   ],
   "attendance": [
     {
-      "id": "att_1",
-      "date": "2026-10-16",
+      "id": "att_1792761412852_y0b7",
+      "date": "2026-10-01",
       "source": "manual",
       "status": "present",
-      "studentId": "st_1",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
+      "studentId": "st_1792760556605_6qv1",
+      "updatedAt": "2026-10-23T13:16:52.852Z"
     },
     {
-      "id": "att_2",
-      "date": "2026-10-16",
+      "id": "att_1792767400069_kgdc",
+      "date": "2026-10-23",
       "source": "manual",
       "status": "present",
-      "studentId": "st_2",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
+      "studentId": "st_1792760556637_1jx2",
+      "updatedAt": "2026-10-23T14:56:40.069Z"
     },
     {
-      "id": "att_3",
-      "date": "2026-10-16",
+      "id": "att_1792767473146_gmsm",
+      "date": "2026-10-23",
       "source": "discipline_sync",
-      "status": "late",
-      "studentId": "st_3",
-      "updatedAt": "2026-10-16T12:49:40.967Z",
-      "linkedDisciplineId": "disc_2"
-    },
-    {
-      "id": "att_4",
-      "date": "2026-10-16",
-      "source": "manual",
-      "status": "present",
-      "studentId": "st_4",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
-    },
-    {
-      "id": "att_5",
-      "date": "2026-10-16",
-      "source": "manual",
-      "status": "present",
-      "studentId": "st_5",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
-    },
-    {
-      "id": "att_6",
-      "date": "2026-10-16",
-      "source": "manual",
-      "status": "excused_absence",
-      "studentId": "st_6",
-      "updatedAt": "2026-10-16T12:49:40.967Z"
+      "status": "unexcused_absence",
+      "studentId": "st_1792760556605_6qv1",
+      "updatedAt": "2026-10-23T14:57:53.146Z",
+      "linkedDisciplineId": "disc_1792767473146_2frz"
     }
   ],
-  "updated_at": "2026-10-23T02:22:08.998Z",
+  "updated_at": "2026-10-23T15:52:00.087Z",
   "seatingChart": {
     "seats": {
       "R1-D1-S1": null,
@@ -1102,23 +1061,24 @@
       "R4-D7-S1": null,
       "R4-D7-S2": null
     },
-    "lastSaved": "2026-10-16T12:49:40.997Z"
+    "lastSaved": "2026-10-23T12:31:48.364Z"
   },
   "announcements": [
     {
       "id": "ann_1",
-      "date": "12:49:40 16/10/2026",
+      "date": "12:31:48 23/10/2026",
       "title": "Kế hoạch học tập & Sinh hoạt ngoại khóa Tuần 10",
-      "author": "Cô Nguyễn Thu Trang (GVCN)",
+      "author": "Cô Lã Thị Thủy (GVCN)",
       "content": "Kính gửi toàn thể học sinh lớp 12A1: Tuần này lớp chúng ta có bài kiểm tra giữa kỳ môn Toán và Vật lý. Các em chú ý ôn tập kỹ lưỡng theo đề cương đã phát. Thứ Bảy tuần này lớp tham gia buổi lao động dọn dẹp khuôn viên trường lúc 7h30 sáng.",
       "category": "Học tập",
+      "imageUrl": "",
       "isPinned": true
     },
     {
       "id": "ann_2",
-      "date": "12:49:40 14/10/2026",
+      "date": "12:31:48 21/10/2026",
       "title": "Nhắc nhở nề nếp trang phục và chuyên cần",
-      "author": "Cô Nguyễn Thu Trang (GVCN)",
+      "author": "Cô Lã Thị Thủy (GVCN)",
       "content": "Đề nghị tất cả học sinh mặc đồng phục đúng quy định, đeo thẻ học sinh và đi học đúng giờ trước 6h45 hàng ngày. Ban cán sự lớp theo dõi sổ theo dõi thi đua và báo cáo GVCN vào cuối mỗi buổi học.",
       "category": "Nhắc nhở",
       "isPinned": false
@@ -1129,7 +1089,7 @@
       "id": "rule_1",
       "name": "Đi học muộn",
       "group": "Chuyên cần",
-      "points": -2,
+      "points": -1,
       "isActive": true,
       "linkedAttendance": "late"
     },
@@ -1137,7 +1097,7 @@
       "id": "rule_2",
       "name": "Vắng không phép",
       "group": "Chuyên cần",
-      "points": -5,
+      "points": -1,
       "isActive": true,
       "linkedAttendance": "unexcused_absence"
     },
@@ -1145,15 +1105,15 @@
       "id": "rule_3",
       "name": "Vắng có phép",
       "group": "Chuyên cần",
-      "points": 0,
+      "points": -1,
       "isActive": true,
       "linkedAttendance": "excused_absence"
     },
     {
       "id": "rule_4",
-      "name": "Không làm bài tập về nhà",
+      "name": "Không học bài, không làm bài tập về nhà",
       "group": "Học tập",
-      "points": -3,
+      "points": -2,
       "isActive": true,
       "linkedAttendance": "none"
     },
@@ -1169,7 +1129,7 @@
       "id": "rule_6",
       "name": "Vi phạm đồng phục / tác phong",
       "group": "Nề nếp",
-      "points": -2,
+      "points": -1,
       "isActive": true,
       "linkedAttendance": "none"
     },
@@ -1178,7 +1138,7 @@
       "name": "Phát biểu xây dựng bài sôi nổi",
       "group": "Học tập",
       "points": 2,
-      "isActive": true,
+      "isActive": false,
       "linkedAttendance": "none"
     },
     {
@@ -1220,40 +1180,182 @@
       "points": 10,
       "isActive": true,
       "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_1792759648168",
+      "name": "Tự ý đổi chỗ ngồi, không ngồi đúng vị trí GVCN, GVBM sắp xếp",
+      "group": "Nề nếp",
+      "points": -2,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_1792759763159",
+      "name": "Vi phạm những vấn đề khác như sử dụng thuốc lá điện tử, trộm đồ, ...",
+      "group": "Nề nếp",
+      "points": -100,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_1792761466199",
+      "name": "quên sách vở, dụng cụ học tập",
+      "group": "Nề nếp",
+      "points": -1,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_1792762078078",
+      "name": "làm việc riêng trong giờ",
+      "group": "Nề nếp",
+      "points": -2,
+      "isActive": true,
+      "linkedAttendance": "none"
     }
   ],
   "disciplineEvents": [
     {
-      "id": "disc_1",
-      "date": "2026-10-16",
-      "note": "Xung phong giải bài tập Toán khó",
-      "points": 2,
-      "ruleId": "rule_7",
-      "ruleName": "Phát biểu xây dựng bài sôi nổi",
-      "createdAt": "2026-10-16T12:49:40.967Z",
-      "studentId": "st_1",
+      "id": "disc_1792767478378_lbvc",
+      "date": "2026-10-23",
+      "note": "",
+      "points": -1,
+      "ruleId": "rule_6",
+      "ruleName": "Vi phạm đồng phục / tác phong",
+      "createdAt": "2026-10-23T14:57:58.378Z",
+      "studentId": "st_1792760556605_6qv1",
       "linkedAttendanceId": null
     },
     {
-      "id": "disc_2",
-      "date": "2026-10-16",
-      "note": "Đi muộn 15 phút tiết 1 do hỏng xe",
-      "points": -2,
-      "ruleId": "rule_1",
-      "ruleName": "Đi học muộn",
-      "createdAt": "2026-10-16T12:49:40.967Z",
-      "studentId": "st_3",
-      "linkedAttendanceId": "att_3"
+      "id": "disc_1792767473146_2frz",
+      "date": "2026-10-23",
+      "note": "",
+      "points": -1,
+      "ruleId": "rule_2",
+      "ruleName": "Vắng không phép",
+      "createdAt": "2026-10-23T14:57:53.146Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": "att_1792767473146_gmsm"
     },
     {
-      "id": "disc_3",
-      "date": "2026-10-16",
-      "note": "Tổ chức tiết mục văn nghệ chào mừng 20/11",
-      "points": 5,
-      "ruleId": "rule_10",
-      "ruleName": "Tham gia tích cực phong trào trường/lớp",
-      "createdAt": "2026-10-16T12:49:40.967Z",
-      "studentId": "st_5",
+      "id": "disc_1792767406729_w6kg",
+      "date": "2026-10-23",
+      "note": "",
+      "points": -2,
+      "ruleId": "rule_4",
+      "ruleName": "Không học bài, không làm bài tập về nhà",
+      "createdAt": "2026-10-23T14:56:46.729Z",
+      "studentId": "st_1792760556637_1jx2",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792762148708_es9q",
+      "date": "2026-09-18",
+      "note": "môn toán",
+      "points": -2,
+      "ruleId": "rule_4",
+      "ruleName": "Không học bài, không làm bài tập về nhà",
+      "createdAt": "2026-10-23T13:29:08.708Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792762035990_7lou",
+      "date": "2026-09-14",
+      "note": "môn tiếng anh",
+      "points": -2,
+      "ruleId": "rule_4",
+      "ruleName": "Không học bài, không làm bài tập về nhà",
+      "createdAt": "2026-10-23T13:27:15.990Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792762008337_0jd7",
+      "date": "2026-09-12",
+      "note": "môn toán",
+      "points": -2,
+      "ruleId": "rule_4",
+      "ruleName": "Không học bài, không làm bài tập về nhà",
+      "createdAt": "2026-10-23T13:26:48.337Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792761986370_eejs",
+      "date": "2026-09-10",
+      "note": "môn lịch sử",
+      "points": -1,
+      "ruleId": "rule_1792761466199",
+      "ruleName": "quên sách vở, dụng cụ học tập",
+      "createdAt": "2026-10-23T13:26:26.370Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792761964104_3nc9",
+      "date": "2026-09-09",
+      "note": "môn toán",
+      "points": -1,
+      "ruleId": "rule_1792761466199",
+      "ruleName": "quên sách vở, dụng cụ học tập",
+      "createdAt": "2026-10-23T13:26:04.104Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792761912532_jbgb",
+      "date": "2026-10-14",
+      "note": "môn công nghệ: chưa nộp bài kttx",
+      "points": -2,
+      "ruleId": "rule_4",
+      "ruleName": "Không học bài, không làm bài tập về nhà",
+      "createdAt": "2026-10-23T13:25:12.532Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792761847332_jn3k",
+      "date": "2026-10-13",
+      "note": "môn tiếng anh",
+      "points": -2,
+      "ruleId": "rule_4",
+      "ruleName": "Không học bài, không làm bài tập về nhà",
+      "createdAt": "2026-10-23T13:24:07.332Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792761740351_ft47",
+      "date": "2026-10-12",
+      "note": "môn toán",
+      "points": -2,
+      "ruleId": "rule_4",
+      "ruleName": "Không làm bài tập về nhà",
+      "createdAt": "2026-10-23T13:22:20.351Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792761715187_1imt",
+      "date": "2026-10-05",
+      "note": "môn toán",
+      "points": -2,
+      "ruleId": "rule_4",
+      "ruleName": "Không làm bài tập về nhà",
+      "createdAt": "2026-10-23T13:21:55.187Z",
+      "studentId": "st_1792760556605_6qv1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_1792761678875_gjq6",
+      "date": "2026-10-01",
+      "note": "môn văn",
+      "points": -1,
+      "ruleId": "rule_1792761466199",
+      "ruleName": "quên sách vở, dụng cụ học tập",
+      "createdAt": "2026-10-23T13:21:18.875Z",
+      "studentId": "st_1792760556605_6qv1",
       "linkedAttendanceId": null
     }
   ]

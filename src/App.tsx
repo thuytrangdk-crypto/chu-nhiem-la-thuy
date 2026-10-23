@@ -200,42 +200,43 @@ export default function App() {
     activeStudentForDetail = data.students.find((s) => s.id === selectedStudentId) || null;
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* 1. Main Left Sidebar */}
-      <Sidebar
-        currentTab={currentTab}
-        onSelectTab={(tab) => {
-          setCurrentTab(tab);
-          setSelectedStudentId(null); // reset student selection when switching tabs
-        }}
-        settings={data.settings}
-        role={auth.role}
-        currentStudentName={auth.fullName}
-        isOpenMobile={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
-        onOpenChangePassword={() => {
-          setIsForcedInitialPassword(false);
-          setIsPasswordModalOpen(true);
-        }}
-        onLogout={handleLogout}
-      />
+  const isViewingStudentDetail = currentTab === 'students' && activeStudentForDetail !== null;
 
-      {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
-        {/* Header */}
-        <Header
+  return (
+    <div className="min-h-screen bg-[#eef5fa] flex">
+      {/* 1. Main Left Sidebar (Hidden when viewing student profile to provide full-width workspace) */}
+      {!isViewingStudentDetail && (
+        <Sidebar
           currentTab={currentTab}
+          onSelectTab={(tab) => {
+            setCurrentTab(tab);
+            setSelectedStudentId(null); // reset student selection when switching tabs
+          }}
           settings={data.settings}
           role={auth.role}
-          studentName={auth.fullName}
-          onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
+          currentStudentName={auth.fullName}
+          isOpenMobile={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
           onOpenChangePassword={() => {
             setIsForcedInitialPassword(false);
             setIsPasswordModalOpen(true);
           }}
           onLogout={handleLogout}
         />
+      )}
+
+      {/* 2. Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {/* Header (Hidden when viewing student detail, as StudentDetailView has its own dedicated top bar) */}
+        {!isViewingStudentDetail && (
+          <Header
+            currentTab={currentTab}
+            settings={data.settings}
+            role={auth.role}
+            studentName={auth.fullName}
+            onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
+          />
+        )}
 
         {/* Global Error Banner if any */}
         {fetchError && (
@@ -254,7 +255,7 @@ export default function App() {
         )}
 
         {/* Main View Port */}
-        <main className="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto">
+        <main className={`flex-1 p-4 md:p-6 w-full ${isViewingStudentDetail ? 'max-w-6xl' : 'max-w-7xl'} mx-auto`}>
           {/* TAB 1: TỔNG QUAN */}
           {currentTab === 'dashboard' && (
             <DashboardView

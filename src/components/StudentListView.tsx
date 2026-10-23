@@ -17,7 +17,12 @@ import {
   Lock,
   Unlock,
   AlertTriangle,
-  Award
+  Award,
+  LayoutGrid,
+  List,
+  Clock,
+  FileText,
+  XCircle
 } from 'lucide-react';
 import { AppData, Student, UserRole } from '../types';
 import { apiRequest } from '../utils/api';
@@ -43,6 +48,7 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
   onSelectStudent,
   onRefreshData,
 }) => {
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState<'all' | 'Nam' | 'Nữ'>('all');
   const [sortField, setSortField] = useState<'code' | 'name'>('code');
@@ -70,6 +76,31 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
   // Discipline Competition Export Modal
   const [isDisciplineExportModalOpen, setIsDisciplineExportModalOpen] = useState(false);
 
+  // Today's date string for attendance lookup
+  const todayDateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // Precompute map of today's attendance by studentId
+  const attendanceTodayMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const att of data.attendance) {
+      if (att.date === todayDateStr) {
+        map.set(att.studentId, att.status);
+      }
+    }
+    return map;
+  }, [data.attendance, todayDateStr]);
+
+  // Precompute map of violation counts (points < 0) by studentId
+  const violationCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const ev of data.disciplineEvents) {
+      if (ev.points < 0) {
+        map.set(ev.studentId, (map.get(ev.studentId) || 0) + 1);
+      }
+    }
+    return map;
+  }, [data.disciplineEvents]);
+
   // Filtered & sorted student list
   const filteredStudents = useMemo(() => {
     return data.students
@@ -92,7 +123,6 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
   // Open Add modal
   const handleOpenAdd = () => {
     setEditingStudent(null);
-    // Auto suggest next code
     const nextNum = data.students.length + 1;
     setFormCode(`HS${String(nextNum).padStart(3, '0')}`);
     setFormName('');
@@ -241,29 +271,33 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
   };
 
   return (
-    <div className="space-y-5">
-      {/* Action Header & Tools */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        {/* Search & Filter */}
-        <div className="flex flex-wrap items-center gap-2.5">
+    <div className="space-y-4">
+      {/* Compact Top Toolbar */}
+      <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        {/* Search, Gender Filter, Sort, and View Switcher */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search Box */}
           <div className="relative">
             <input
               type="text"
               placeholder="Tìm theo tên, mã HS, SĐT..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 w-60"
+              className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 w-52 md:w-60"
             />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
           </div>
 
-          <div className="flex bg-slate-100 p-1 rounded-xl text-xs">
+          {/* Gender Filter */}
+          <div className="flex bg-slate-100 p-0.5 rounded-xl text-xs">
             {(['all', 'Nam', 'Nữ'] as const).map((g) => (
               <button
                 key={g}
                 onClick={() => setGenderFilter(g)}
-                className={`px-3 py-1 font-medium rounded-lg transition-colors cursor-pointer ${
-                  genderFilter === g ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                className={`px-2.5 py-1 font-semibold rounded-lg transition-colors cursor-pointer ${
+                  genderFilter === g
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {g === 'all' ? 'Tất cả' : g}
@@ -271,33 +305,63 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
             ))}
           </div>
 
+          {/* Sort selector */}
           <select
             value={sortField}
             onChange={(e: any) => setSortField(e.target.value)}
-            className="px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 cursor-pointer"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer"
           >
-            <option value="code">Sắp xếp theo Mã HS</option>
-            <option value="name">Sắp xếp theo Tên (A-Z)</option>
+            <option value="code">Mã HS</option>
+            <option value="name">Tên (A-Z)</option>
           </select>
+
+          {/* View Mode Switcher (Cards vs Table) */}
+          <div className="flex bg-slate-100 p-0.5 rounded-xl text-xs border border-slate-200/60">
+            <button
+              onClick={() => setViewMode('cards')}
+              title="Xem dạng thẻ (Mặc định)"
+              className={`p-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'cards'
+                  ? 'bg-white text-sky-700 shadow-xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">Dạng thẻ</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              title="Xem dạng bảng"
+              className={`p-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-white text-sky-700 shadow-xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Dạng bảng</span>
+            </button>
+          </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={downloadStudentTemplate}
-            title="Tải file mẫu Excel"
-            className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Tải file Excel mẫu"
+            className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            File Excel Mẫu
+            <span className="hidden sm:inline">File Mẫu</span>
           </button>
 
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="px-3 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            title="Nhập danh sách học sinh từ file Excel"
+            className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            Nhập Excel
+            <span className="hidden sm:inline">Nhập Excel</span>
           </button>
 
           <button
@@ -310,147 +374,275 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
               )
             }
             title="Xuất danh sách học sinh ra file Excel"
-            className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
           >
             <Upload className="w-3.5 h-3.5" />
-            Xuất Excel
+            <span className="hidden sm:inline">Xuất Excel</span>
           </button>
 
           {(!role || role === 'teacher') && (
             <button
               type="button"
               onClick={() => setIsDisciplineExportModalOpen(true)}
-              title="Xuất bảng tổng hợp & chi tiết thi đua của toàn bộ học sinh lớp"
-              className="px-3.5 py-2 text-xs font-bold text-amber-900 bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 border border-amber-300/80 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              title="Xuất bảng tổng hợp & chi tiết thi đua của cả lớp"
+              className="px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
             >
-              <Award className="w-4 h-4 text-amber-600" />
-              Xuất Excel thi đua
+              <Award className="w-3.5 h-3.5 text-amber-600" />
+              <span>Xuất Thi Đua</span>
             </button>
           )}
 
           <button
             onClick={handleOpenAdd}
-            className="px-3.5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="px-3 py-1.5 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           >
-            <UserPlus className="w-4 h-4" />
-            Thêm Học Sinh
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Thêm Học Sinh</span>
           </button>
         </div>
       </div>
 
-      {/* Student Roster Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 uppercase font-semibold text-[11px] tracking-wider">
-                <th className="py-3 px-4 w-12 text-center">STT</th>
-                <th className="py-3 px-4 w-28">Mã HS</th>
-                <th className="py-3 px-4">Họ và Tên</th>
-                <th className="py-3 px-4 w-24">Giới tính</th>
-                <th className="py-3 px-4 w-32">Ngày sinh</th>
-                <th className="py-3 px-4 w-32">SĐT Liên hệ</th>
-                <th className="py-3 px-4 w-36">Tài khoản</th>
-                <th className="py-3 px-4 w-44 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredStudents.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    Không tìm thấy học sinh nào phù hợp
-                  </td>
-                </tr>
-              ) : (
-                filteredStudents.map((st, index) => (
-                  <tr
+      {/* ================= MODE 1: CARDS VIEW (DEFAULT) ================= */}
+      {viewMode === 'cards' && (
+        <div className="space-y-4">
+          {filteredStudents.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400">
+              Không tìm thấy học sinh nào phù hợp
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+              {filteredStudents.map((st) => {
+                const violations = violationCountMap.get(st.id) || 0;
+                const hasViolation = violations > 0;
+                const attStatus = attendanceTodayMap.get(st.id);
+
+                return (
+                  <div
                     key={st.id}
-                    className="hover:bg-sky-50/40 transition-colors group cursor-pointer"
                     onClick={() => onSelectStudent(st.id)}
+                    className="relative bg-white rounded-2xl border border-slate-200/90 hover:border-sky-300 hover:shadow-md transition-all p-4 flex flex-col justify-between cursor-pointer group select-none"
                   >
-                    <td className="py-3 px-4 text-center font-mono text-slate-600">
-                      {index + 1}
-                    </td>
-                    <td className="py-3 px-4 font-mono font-bold text-sky-800">
-                      {st.studentCode}
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-slate-800">
-                      <div className="flex items-center gap-2">
-                        <span>{st.fullName}</span>
+                    {/* Top Right Warning Icon: ONLY when student actually has violations */}
+                    {hasViolation && (
+                      <div
+                        title={`Có ${violations} vi phạm kỷ luật`}
+                        className="absolute top-3 right-3 flex items-center justify-center w-6 h-6 rounded-full bg-rose-50 text-rose-500 border border-rose-200/80"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5" />
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`text-[11px] font-medium ${
-                          st.gender === 'Nữ' ? 'text-pink-600' : 'text-blue-700'
+                    )}
+
+                    {/* Top Identity Block */}
+                    <div className="flex flex-col items-center text-center pt-1">
+                      {/* Avatar initial circle */}
+                      <div
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center font-extrabold text-lg shadow-xs transition-transform group-hover:scale-105 ${
+                          st.gender === 'Nữ'
+                            ? 'bg-rose-50 text-rose-600 border border-rose-100'
+                            : 'bg-sky-50 text-sky-700 border border-sky-100'
                         }`}
                       >
-                        {st.gender}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 font-mono text-slate-600">{st.dob}</td>
-                    <td className="py-3 px-4 font-mono text-slate-600">
-                      {st.phone || <span className="text-slate-600 italic">Chưa có</span>}
-                    </td>
-                    <td className="py-3 px-4">
-                      {st.isLocked ? (
-                        <span className="text-[11px] text-rose-600 font-medium flex items-center gap-1">
-                          <Lock className="w-3 h-3" />
-                          Tạm khóa
+                        {st.fullName.charAt(0)}
+                      </div>
+
+                      {/* Full Name Uppercase */}
+                      <h3 className="mt-3 text-xs font-bold text-slate-900 uppercase tracking-tight group-hover:text-sky-700 transition-colors line-clamp-1 w-full">
+                        {st.fullName}
+                      </h3>
+
+                      {/* Gender • Date of Birth */}
+                      <div className="mt-1 text-[11px] font-medium text-slate-500">
+                        <span>{st.gender}</span>
+                        <span className="mx-1.5 text-slate-300">•</span>
+                        <span className="font-mono">{st.dob}</span>
+                      </div>
+
+                      {/* Student Code Badge */}
+                      <div className="mt-1 text-[10px] font-mono font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                        {st.studentCode}
+                      </div>
+                    </div>
+
+                    {/* Bottom Status Row: Attendance & Violation badges */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      {/* Attendance badge */}
+                      {attStatus === 'present' ? (
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200/60">
+                          <CheckCircle className="w-3 h-3" />
+                          Có mặt
                         </span>
-                      ) : st.isInitialPassword ? (
-                        <span className="text-[11px] text-amber-600 font-medium">
-                          Chưa đổi MK
+                      ) : attStatus === 'late' ? (
+                        <span className="inline-flex items-center gap-1 font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200/60">
+                          <Clock className="w-3 h-3" />
+                          Đi muộn
+                        </span>
+                      ) : attStatus === 'excused_absence' ? (
+                        <span className="inline-flex items-center gap-1 font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200/60">
+                          <FileText className="w-3 h-3" />
+                          Vắng CP
+                        </span>
+                      ) : attStatus === 'unexcused_absence' ? (
+                        <span className="inline-flex items-center gap-1 font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200/60">
+                          <XCircle className="w-3 h-3" />
+                          Vắng KP
                         </span>
                       ) : (
-                        <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" />
-                          Đã kích hoạt
+                        <span className="inline-flex items-center gap-1 font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200/70">
+                          Chưa ĐD
                         </span>
                       )}
-                    </td>
-                    <td
-                      className="py-3 px-4 text-right"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => onSelectStudent(st.id)}
-                          title="Xem hồ sơ chi tiết"
-                          className="p-1.5 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit(st)}
-                          title="Sửa thông tin"
-                          className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleResetPassword(st)}
-                          title="Đặt lại mật khẩu về ngày sinh"
-                          className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <KeyRound className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStudent(st)}
-                          title="Xóa học sinh"
-                          className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+
+                      {/* Violation badge: ONLY red/alert style if violations > 0 */}
+                      {hasViolation ? (
+                        <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200/80">
+                          <AlertTriangle className="w-3 h-3 text-rose-600" />
+                          {violations} vi phạm
+                        </span>
+                      ) : (
+                        <span className="font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                          0 vi phạm
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ================= MODE 2: TABLE VIEW ================= */}
+      {viewMode === 'table' && (
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 uppercase font-semibold text-[11px] tracking-wider">
+                  <th className="py-3 px-4 w-12 text-center">STT</th>
+                  <th className="py-3 px-4 w-28">Mã HS</th>
+                  <th className="py-3 px-4">Họ và Tên</th>
+                  <th className="py-3 px-4 w-24">Giới tính</th>
+                  <th className="py-3 px-4 w-32">Ngày sinh</th>
+                  <th className="py-3 px-4 w-32">SĐT Liên hệ</th>
+                  <th className="py-3 px-4 w-32 text-center">Vi phạm</th>
+                  <th className="py-3 px-4 w-36">Tài khoản</th>
+                  <th className="py-3 px-4 w-44 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-slate-400">
+                      Không tìm thấy học sinh nào phù hợp
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredStudents.map((st, index) => {
+                    const violations = violationCountMap.get(st.id) || 0;
+                    const hasViolation = violations > 0;
+
+                    return (
+                      <tr
+                        key={st.id}
+                        className="hover:bg-sky-50/40 transition-colors group cursor-pointer"
+                        onClick={() => onSelectStudent(st.id)}
+                      >
+                        <td className="py-3 px-4 text-center font-mono text-slate-600">
+                          {index + 1}
+                        </td>
+                        <td className="py-3 px-4 font-mono font-bold text-sky-800">
+                          {st.studentCode}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-800">
+                          <div className="flex items-center gap-2">
+                            <span>{st.fullName}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`text-[11px] font-medium ${
+                              st.gender === 'Nữ' ? 'text-pink-600' : 'text-blue-700'
+                            }`}
+                          >
+                            {st.gender}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-mono text-slate-600">{st.dob}</td>
+                        <td className="py-3 px-4 font-mono text-slate-600">
+                          {st.phone || <span className="text-slate-400 italic">Chưa có</span>}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {hasViolation ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200">
+                              <AlertTriangle className="w-3 h-3 text-rose-600" />
+                              {violations}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 font-mono">0</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {st.isLocked ? (
+                            <span className="text-[11px] text-rose-600 font-medium flex items-center gap-1">
+                              <Lock className="w-3 h-3" />
+                              Tạm khóa
+                            </span>
+                          ) : st.isInitialPassword ? (
+                            <span className="text-[11px] text-amber-600 font-medium">
+                              Chưa đổi MK
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" />
+                              Đã kích hoạt
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="py-3 px-4 text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => onSelectStudent(st.id)}
+                              title="Xem hồ sơ chi tiết"
+                              className="p-1.5 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleOpenEdit(st)}
+                              title="Sửa thông tin"
+                              className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleResetPassword(st)}
+                              title="Đặt lại mật khẩu về ngày sinh"
+                              className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStudent(st)}
+                              title="Xóa học sinh"
+                              className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ================= MODAL: ADD / EDIT STUDENT ================= */}
       {isModalOpen && (
@@ -462,7 +654,7 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -557,14 +749,14 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   {isSubmitting ? 'Đang lưu...' : 'Lưu Thông Tin'}
                 </button>
@@ -592,7 +784,7 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
               </div>
               <button
                 onClick={() => setIsImportModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

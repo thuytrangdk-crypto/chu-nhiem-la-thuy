@@ -258,7 +258,7 @@ function getInitialData() {
       id: 'ann_1',
       title: 'Kế hoạch học tập & Sinh hoạt ngoại khóa Tuần 10',
       content: 'Kính gửi toàn thể học sinh lớp 12A1: Tuần này lớp chúng ta có bài kiểm tra giữa kỳ môn Toán và Vật lý. Các em chú ý ôn tập kỹ lưỡng theo đề cương đã phát. Thứ Bảy tuần này lớp tham gia buổi lao động dọn dẹp khuôn viên trường lúc 7h30 sáng.',
-      author: 'Cô Nguyễn Thu Trang (GVCN)',
+      author: 'Cô Lã Thị Thủy (GVCN)',
       date: new Date().toLocaleString('vi-VN'),
       category: 'Học tập',
       isPinned: true
@@ -267,7 +267,7 @@ function getInitialData() {
       id: 'ann_2',
       title: 'Nhắc nhở nề nếp trang phục và chuyên cần',
       content: 'Đề nghị tất cả học sinh mặc đồng phục đúng quy định, đeo thẻ học sinh và đi học đúng giờ trước 6h45 hàng ngày. Ban cán sự lớp theo dõi sổ theo dõi thi đua và báo cáo GVCN vào cuối mỗi buổi học.',
-      author: 'Cô Nguyễn Thu Trang (GVCN)',
+      author: 'Cô Lã Thị Thủy (GVCN)',
       date: new Date(Date.now() - 86400000 * 2).toLocaleString('vi-VN'),
       category: 'Nhắc nhở',
       isPinned: false
@@ -344,14 +344,39 @@ function getInitialData() {
 // Database helper functions with in-memory caching and atomic file write
 let memoryDb: any = null;
 
+export function formatTeacherAuthor(teacherName?: string): string {
+  const raw = (teacherName || 'Cô Lã Thị Thủy').trim();
+  const clean = raw.replace(/\s*\(GVCN\)\s*$/i, '').trim();
+  return `${clean} (GVCN)`;
+}
+
+function migrateAnnouncementsAuthor(db: any): boolean {
+  if (!db || !Array.isArray(db.announcements)) return false;
+  let changed = false;
+  const currentAuthor = formatTeacherAuthor(db.settings?.teacherName);
+  for (const ann of db.announcements) {
+    if (ann && typeof ann.author === 'string' && (ann.author.includes('Nguyễn Thu Trang') || !ann.author.trim())) {
+      ann.author = currentAuthor;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 function loadDatabase() {
   if (memoryDb) {
+    if (migrateAnnouncementsAuthor(memoryDb)) {
+      saveDatabase(memoryDb, true);
+    }
     return memoryDb;
   }
   try {
     if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
       memoryDb = JSON.parse(content);
+      if (migrateAnnouncementsAuthor(memoryDb)) {
+        saveDatabase(memoryDb, true);
+      }
       return memoryDb;
     }
   } catch (err) {
@@ -437,8 +462,9 @@ async function initFromSupabase() {
         }
       }
 
+      const annMigrated = migrateAnnouncementsAuthor(mergedData);
       saveDatabase(mergedData, false);
-      if (mergedData.teacher?.hash !== data.data.teacher?.hash) {
+      if (mergedData.teacher?.hash !== data.data.teacher?.hash || annMigrated) {
         await syncToSupabase(mergedData);
       }
       supabaseLastSyncTime = data.updated_at;
@@ -446,6 +472,7 @@ async function initFromSupabase() {
       console.log('[Supabase] Đã đồng bộ dữ liệu mới nhất từ Supabase Cloud:', data.updated_at);
     } else if (localData) {
       console.log('[Supabase] Khởi tạo dữ liệu từ máy chủ lên Supabase Cloud lần đầu...');
+      migrateAnnouncementsAuthor(localData);
       await syncToSupabase(localData);
     }
   } catch (err: any) {
@@ -1506,6 +1533,9 @@ app.post(['/api/announcements', '/announcements'], authMiddleware, teacherOnly, 
     ann.category = category || 'Thông báo chung';
     ann.isPinned = !!isPinned;
     if (imageUrl !== undefined) ann.imageUrl = imageUrl;
+    if (!ann.author || ann.author.includes('Nguyễn Thu Trang')) {
+      ann.author = formatTeacherAuthor(db.settings.teacherName);
+    }
 
     saveDatabase(db);
     return res.json({ message: 'Cập nhật thông báo thành công!', announcement: ann });
@@ -1515,7 +1545,7 @@ app.post(['/api/announcements', '/announcements'], authMiddleware, teacherOnly, 
     id: `ann_${Date.now()}`,
     title: title.trim(),
     content: content.trim(),
-    author: `${db.settings.teacherName} (GVCN)`,
+    author: formatTeacherAuthor(db.settings.teacherName),
     date: new Date().toLocaleString('vi-VN'),
     category: category || 'Thông báo chung',
     isPinned: !!isPinned,

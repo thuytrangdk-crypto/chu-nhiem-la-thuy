@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { AppData, UserRole } from '../types';
 import { calculateDisciplineScore, evaluateConduct } from '../utils/scoring';
+import { formatAnnouncementAuthor } from './BoardAndSeatingView';
 
 interface DashboardViewProps {
   data: AppData;
@@ -465,7 +466,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     {ann.content}
                   </p>
                   <div className="mt-2 text-[11px] text-sky-700 font-medium">
-                    {ann.author}
+                    {formatAnnouncementAuthor(ann.author, data.settings.teacherName)}
                   </div>
                 </div>
               ))

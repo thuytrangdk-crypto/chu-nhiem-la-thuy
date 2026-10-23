@@ -679,3 +679,86 @@ export function exportDisciplineToExcel(
 
   XLSX.writeFile(wb, filename);
 }
+
+// 7. Export Single Student Violations to Excel
+export function exportStudentViolationsExcel(
+  student: Student,
+  allEvents: DisciplineEvent[],
+  settings: AppSettings,
+  periodLabel: string,
+  selectedMonth?: string
+) {
+  const exportTimeStr = formatDateTimeVN(new Date());
+
+  // Filter events for this student
+  let studentEvents = allEvents.filter((ev) => ev.studentId === student.id);
+
+  if (selectedMonth && selectedMonth !== 'all') {
+    studentEvents = studentEvents.filter((ev) => (ev.date || '').startsWith(selectedMonth));
+  }
+
+  // Sort chronologically descending (newest first)
+  studentEvents.sort((a, b) => b.date.localeCompare(a.date));
+
+  const teacherRecorderName = settings.teacherName ? `GVCN ${settings.teacherName}` : 'Giáo viên chủ nhiệm';
+
+  const metadata: any[][] = [
+    [`DANH SÁCH VI PHẠM & GHI NHẬN THI ĐUA`],
+    [`Học sinh: ${student.fullName}`, '', `Mã học sinh: ${student.studentCode}`, '', `Giới tính: ${student.gender} - Ngày sinh: ${student.dob}`],
+    [`Lớp: ${settings.className || '9A2'}`, '', `Trường: ${settings.schoolName || ''}`, '', `GVCN: ${settings.teacherName || ''}`],
+    [`Kỳ báo cáo: ${periodLabel}`, '', `Thời gian xuất file: ${exportTimeStr}`],
+    [],
+    [
+      'STT',
+      'Ngày xảy ra',
+      'Quy tắc / Sự việc',
+      'Loại ghi nhận',
+      'Điểm cộng/trừ',
+      'Ghi chú chi tiết',
+      'Người ghi nhận',
+    ],
+  ];
+
+  const rows: any[][] = studentEvents.map((ev, idx) => {
+    const pts = typeof ev.points === 'number' ? ev.points : Number(ev.points) || 0;
+    const pointsFormatted = pts > 0 ? `+${pts}` : pts === 0 ? '0' : `${pts}`;
+    const eventType = pts > 0 ? 'Khen thưởng / Tích cực' : pts < 0 ? 'Vi phạm kỷ luật' : 'Ghi nhận';
+
+    return [
+      idx + 1,
+      formatDateVN(ev.date),
+      sanitizeExcelText(ev.ruleName || 'Ghi nhận thi đua'),
+      eventType,
+      pointsFormatted,
+      sanitizeExcelText(ev.note || ''),
+      teacherRecorderName,
+    ];
+  });
+
+  if (rows.length === 0) {
+    rows.push([1, '-', 'Không có sự việc vi phạm hay khen thưởng nào trong kỳ này', '-', '-', '', teacherRecorderName]);
+  }
+
+  const wsData = [...metadata, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  ws['!cols'] = [
+    { wch: 6 },
+    { wch: 14 },
+    { wch: 34 },
+    { wch: 22 },
+    { wch: 16 },
+    { wch: 36 },
+    { wch: 22 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ViPhamHocSinh');
+
+  const cleanName = student.fullName.replace(/[\s/\\?%*:|"<>]/g, '_');
+  const cleanPeriod = periodLabel.replace(/[\s/\\?%*:|"<>]/g, '_');
+  const filename = `Vi_pham_${student.studentCode}_${cleanName}_${cleanPeriod}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
+}
+
