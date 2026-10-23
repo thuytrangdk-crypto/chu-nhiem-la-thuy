@@ -47,6 +47,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isSavingGeneral, setIsSavingGeneral] = useState(false);
   const [generalMessage, setGeneralMessage] = useState<string | null>(null);
 
+  // Teacher password change inside settings state
+  const [showPasswordInputs, setShowPasswordInputs] = useState(false);
+  const [teacherNewPassword, setTeacherNewPassword] = useState('');
+  const [teacherConfirmPassword, setTeacherConfirmPassword] = useState('');
+
   // Thresholds state
   const [thresholds, setThresholds] = useState(() => {
     return data.settings.conductThresholds || [
@@ -119,6 +124,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setIsSavingGeneral(true);
     setGeneralMessage(null);
 
+    if (showPasswordInputs && teacherNewPassword) {
+      if (teacherNewPassword.length < 6) {
+        alert('Mật khẩu mới phải có tối thiểu 6 ký tự');
+        setIsSavingGeneral(false);
+        return;
+      }
+      if (teacherNewPassword !== teacherConfirmPassword) {
+        alert('Xác nhận mật khẩu mới không khớp!');
+        setIsSavingGeneral(false);
+        return;
+      }
+    }
+
     try {
       await apiRequest('/api/settings', {
         method: 'POST',
@@ -130,11 +148,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           academicYear,
           baseDisciplinePoints: Number(baseDisciplinePoints),
           conductThresholds: thresholds,
+          teacherPassword: showPasswordInputs && teacherNewPassword ? teacherNewPassword : undefined,
         },
       });
       await onRefreshData();
-      setGeneralMessage('Đã lưu các thay đổi cài đặt chung thành công!');
-      setTimeout(() => setGeneralMessage(null), 3000);
+      if (showPasswordInputs && teacherNewPassword) {
+        setTeacherNewPassword('');
+        setTeacherConfirmPassword('');
+        setShowPasswordInputs(false);
+        setGeneralMessage('Đã lưu cài đặt và cập nhật mật khẩu GVCN thành công!');
+      } else {
+        setGeneralMessage('Đã lưu các thay đổi cài đặt chung thành công!');
+      }
+      setTimeout(() => setGeneralMessage(null), 3500);
     } catch (err: any) {
       alert(err.message || 'Lỗi khi lưu cài đặt');
     } finally {
@@ -393,21 +419,63 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Mật khẩu giáo viên
-                </label>
-                <button
-                  type="button"
-                  onClick={onOpenChangePassword}
-                  className="w-full px-3 py-2 text-xs text-left text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl flex items-center justify-between cursor-pointer"
-                >
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <KeyRound className="w-3.5 h-3.5" />
-                    Đổi mật khẩu GVCN
-                  </span>
-                  <span className="text-[11px] text-sky-600">Thay đổi</span>
-                </button>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Mật khẩu giáo viên chủ nhiệm
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordInputs(!showPasswordInputs)}
+                    className="text-[11px] text-sky-600 hover:text-sky-800 hover:underline cursor-pointer"
+                  >
+                    {showPasswordInputs ? 'Thu gọn' : 'Đổi trực tiếp tại đây'}
+                  </button>
+                </div>
+
+                {!showPasswordInputs ? (
+                  <button
+                    type="button"
+                    onClick={onOpenChangePassword}
+                    className="w-full px-3 py-2 text-xs text-left text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl flex items-center justify-between cursor-pointer transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <KeyRound className="w-3.5 h-3.5" />
+                      Mở hộp thoại đổi mật khẩu GVCN
+                    </span>
+                    <span className="text-[11px] font-semibold text-sky-600 bg-white px-2 py-0.5 rounded-md border border-sky-200 shadow-2xs">Đổi mật khẩu</span>
+                  </button>
+                ) : (
+                  <div className="p-3 bg-sky-50/70 border border-sky-200 rounded-xl space-y-2.5">
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                        Mật khẩu mới (tối thiểu 6 ký tự)
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="Nhập mật khẩu mới"
+                        value={teacherNewPassword}
+                        onChange={(e) => setTeacherNewPassword(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                        Xác nhận mật khẩu mới
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="Nhập lại mật khẩu mới"
+                        value={teacherConfirmPassword}
+                        onChange={(e) => setTeacherConfirmPassword(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500">
+                      Mật khẩu mới sẽ được lưu vĩnh viễn khi bạn bấm &ldquo;Lưu Cài Đặt Chung&rdquo; bên dưới.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

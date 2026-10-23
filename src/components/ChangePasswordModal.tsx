@@ -53,6 +53,10 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
       setSuccess(res.message || 'Đổi mật khẩu thành công!');
       setTimeout(() => {
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setSuccess(null);
         if (onSuccess) onSuccess();
         onClose();
       }, 1200);

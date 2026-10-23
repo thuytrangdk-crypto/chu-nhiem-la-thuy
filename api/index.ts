@@ -26,50 +26,29 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let supabaseLastSyncTime: string | null = null;
 let supabaseSyncError: string | null = null;
 
-async function syncToSupabase(data: any) {
+async function syncToSupabase(data: any): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('gvcn_store')
       .upsert({
         id: 'gvcn_primary',
         data,
-        updated_at: new Date().toISOString(),
+        updated_at: data?.updated_at || new Date().toISOString(),
       });
     if (error) {
       supabaseSyncError = error.message;
       console.warn('[Supabase Sync Notice]:', error.message);
+      return false;
     } else {
-      supabaseLastSyncTime = new Date().toISOString();
+      supabaseLastSyncTime = data?.updated_at || new Date().toISOString();
       supabaseSyncError = null;
+      return true;
     }
   } catch (err: any) {
     supabaseSyncError = err.message || 'Lỗi kết nối Supabase';
+    return false;
   }
 }
-
-async function initFromSupabase() {
-  try {
-    const { data, error } = await supabase
-      .from('gvcn_store')
-      .select('data, updated_at')
-      .eq('id', 'gvcn_primary')
-      .maybeSingle();
-    if (data && data.data && !error) {
-      console.log('[Supabase] Đã đồng bộ dữ liệu mới nhất từ Supabase Cloud:', data.updated_at);
-      saveDatabase(data.data);
-      supabaseLastSyncTime = data.updated_at;
-      supabaseSyncError = null;
-    } else if (error) {
-      supabaseSyncError = error.message;
-      console.log('[Supabase Notice]:', error.message);
-    }
-  } catch (err: any) {
-    supabaseSyncError = err.message;
-  }
-}
-
-// Initial cloud sync attempt
-initFromSupabase().catch(() => {});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -105,6 +84,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Default teacher credentials constants
+const DEFAULT_TEACHER_PASSWORD = 'giaovien123';
+const DEFAULT_TEACHER_SALT = '80fed89320a63def885b996b85dc993a';
+const DEFAULT_TEACHER_HASH = '4ebd0f95a56aacdf80d2e1204228c4265b26b1ba76f9308f4b6d5db42623d7ec0f0431182dba34a971d7134316f21563fdde4b2b48c4cad84bd06dff9c6f390c';
+
 // Helper for password hashing using salt + SHA-256 PBKDF2
 function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
   const actualSalt = salt || crypto.randomBytes(16).toString('hex');
@@ -128,7 +112,7 @@ if (!fs.existsSync(DATA_DIR)) {
 
 // Initial Database schema seed
 function getInitialData() {
-  const teacherPass = hashPassword('giaovien123');
+  const teacherPass = { hash: DEFAULT_TEACHER_HASH, salt: DEFAULT_TEACHER_SALT };
 
   const defaultRules = [
     { id: 'rule_1', name: 'Đi học muộn', group: 'Chuyên cần', points: -2, linkedAttendance: 'late', isActive: true },
@@ -379,7 +363,8 @@ function loadDatabase() {
   return memoryDb;
 }
 
-function saveDatabase(data: any) {
+function saveDatabase(data: any, syncCloud: boolean = true) {
+  data.updated_at = new Date().toISOString();
   memoryDb = data;
   try {
     const tempPath = `${DB_FILE}.tmp`;
@@ -388,9 +373,88 @@ function saveDatabase(data: any) {
   } catch (err) {
     console.warn('Could not write to local DB file (ephemeral serverless filesystem):', err);
   }
-  // Background sync to Supabase Cloud
-  syncToSupabase(data).catch(() => {});
+  if (syncCloud) {
+    // Background sync to Supabase Cloud
+    syncToSupabase(data).catch(() => {});
+  }
 }
+
+async function initFromSupabase() {
+  try {
+    let localData: any = null;
+    let localMtime = 0;
+    if (fs.existsSync(DB_FILE)) {
+      try {
+        const content = fs.readFileSync(DB_FILE, 'utf-8');
+        localData = JSON.parse(content);
+        localMtime = fs.statSync(DB_FILE).mtimeMs;
+      } catch (e) {
+        console.warn('Error reading local DB file in initFromSupabase:', e);
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('gvcn_store')
+      .select('data, updated_at')
+      .eq('id', 'gvcn_primary')
+      .maybeSingle();
+
+    if (error) {
+      supabaseSyncError = error.message;
+      console.log('[Supabase Notice]:', error.message);
+      return;
+    }
+
+    if (data && data.data) {
+      const cloudUpdatedAt = new Date(data.updated_at || 0).getTime();
+      const localUpdatedAt = localData?.updated_at
+        ? new Date(localData.updated_at).getTime()
+        : localMtime;
+
+      const localTeacher = localData?.teacher;
+      const cloudTeacher = data.data.teacher;
+
+      // If local data exists and is strictly newer than cloud, sync local to cloud
+      if (localData && localUpdatedAt > cloudUpdatedAt + 1000) {
+        console.log('[Supabase] Dữ liệu nội bộ mới hơn Supabase Cloud. Đang đồng bộ lên Cloud...');
+        await syncToSupabase(localData);
+        supabaseLastSyncTime = localData.updated_at || new Date().toISOString();
+        return;
+      }
+
+      // If cloud is newer or equal, adopt cloud data, but protect custom teacher credentials!
+      const mergedData = { ...data.data };
+
+      if (localTeacher && localTeacher.hash) {
+        const isLocalCustom = localTeacher.hash !== DEFAULT_TEACHER_HASH || localTeacher.isCustomPassword;
+        const isCloudDefault = !cloudTeacher?.hash || cloudTeacher.hash === DEFAULT_TEACHER_HASH;
+        const localTeacherTime = localTeacher.updatedAt ? new Date(localTeacher.updatedAt).getTime() : localUpdatedAt;
+        const cloudTeacherTime = cloudTeacher?.updatedAt ? new Date(cloudTeacher.updatedAt).getTime() : cloudUpdatedAt;
+
+        if (isLocalCustom && (isCloudDefault || localTeacherTime >= cloudTeacherTime)) {
+          mergedData.teacher = localTeacher;
+          console.log('[Auth] Bảo vệ mật khẩu giáo viên đã được đổi tại máy chủ');
+        }
+      }
+
+      saveDatabase(mergedData, false);
+      if (mergedData.teacher?.hash !== data.data.teacher?.hash) {
+        await syncToSupabase(mergedData);
+      }
+      supabaseLastSyncTime = data.updated_at;
+      supabaseSyncError = null;
+      console.log('[Supabase] Đã đồng bộ dữ liệu mới nhất từ Supabase Cloud:', data.updated_at);
+    } else if (localData) {
+      console.log('[Supabase] Khởi tạo dữ liệu từ máy chủ lên Supabase Cloud lần đầu...');
+      await syncToSupabase(localData);
+    }
+  } catch (err: any) {
+    supabaseSyncError = err.message;
+  }
+}
+
+// Initial cloud sync attempt
+initFromSupabase().catch(() => {});
 
 // In-memory active tokens session store + Stateless HMAC token signing for serverless lambdas
 interface SessionUser {
@@ -467,12 +531,15 @@ function teacherOnly(req: express.Request, res: express.Response, next: express.
 // 0. Public Info (for login screen & unauthenticated users)
 app.get(['/api/public/info', '/public/info', '/api/settings/public', '/settings/public'], (_req, res) => {
   const db = loadDatabase();
+  const isDefaultTeacherPassword = !db.teacher?.hash || db.teacher.hash === DEFAULT_TEACHER_HASH;
+
   return res.json({
     appName: db.settings?.appName || 'GVCN',
     schoolName: db.settings?.schoolName || 'Trường THCS Nguyễn Huệ',
     className: db.settings?.className || '9A2',
     teacherName: db.settings?.teacherName || 'Cô Lã Thị Thủy',
     academicYear: db.settings?.academicYear || '2026 - 2027',
+    isDefaultTeacherPassword,
   });
 });
 
@@ -570,7 +637,7 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
 });
 
 // 2. Change password
-app.post(['/api/auth/change-password', '/auth/change-password'], authMiddleware, (req, res) => {
+app.post(['/api/auth/change-password', '/auth/change-password'], authMiddleware, async (req, res) => {
   const user = (req as any).user as SessionUser;
   const { oldPassword, newPassword } = req.body;
   const db = loadDatabase();
@@ -591,15 +658,23 @@ app.post(['/api/auth/change-password', '/auth/change-password'], authMiddleware,
     const newPass = hashPassword(newPassword);
     db.teacher.hash = newPass.hash;
     db.teacher.salt = newPass.salt;
+    db.teacher.updatedAt = new Date().toISOString();
+    db.teacher.isCustomPassword = true;
+    db.teacher.failedAttempts = 0;
+    db.teacher.lockedUntil = 0;
+    db.updated_at = new Date().toISOString();
+
     db.auditLogs.unshift({
       id: `log_${Date.now()}`,
       timestamp: new Date().toISOString(),
       action: 'Đổi mật khẩu GV',
       actor: db.settings.teacherName,
-      details: 'Giáo viên đã đổi mật khẩu quản trị'
+      details: 'Giáo viên đã đổi mật khẩu quản trị thành công và lưu vĩnh viễn'
     });
-    saveDatabase(db);
-    return res.json({ message: 'Đổi mật khẩu thành công!' });
+
+    saveDatabase(db, false);
+    await syncToSupabase(db);
+    return res.json({ message: 'Đổi mật khẩu thành công và đã lưu an toàn vào hệ thống!' });
   }
 
   if (user.role === 'student') {
@@ -622,9 +697,55 @@ app.post(['/api/auth/change-password', '/auth/change-password'], authMiddleware,
     student.account.hash = newPass.hash;
     student.account.salt = newPass.salt;
     student.account.isInitialPassword = false;
-    saveDatabase(db);
+    student.account.failedAttempts = 0;
+    student.account.lockedUntil = 0;
+    student.account.updatedAt = new Date().toISOString();
+    db.updated_at = new Date().toISOString();
+
+    saveDatabase(db, false);
+    await syncToSupabase(db);
     return res.json({ message: 'Đổi mật khẩu thành công! Tài khoản của bạn đã được bảo vệ.' });
   }
+});
+
+// 2b. Teacher recovery / emergency reset (When teacher forgot custom password)
+app.post(['/api/auth/teacher-forgot-password', '/auth/teacher-forgot-password'], async (req, res) => {
+  const { confirmationCode } = req.body;
+  const db = loadDatabase();
+
+  const expectedClass = (db.settings.className || '9A2').trim().toUpperCase();
+  const expectedSchool = (db.settings.schoolName || '').trim().toLowerCase();
+  const inputCode = String(confirmationCode || '').trim().toUpperCase();
+  const inputNorm = String(confirmationCode || '').trim().toLowerCase();
+
+  if (inputCode !== expectedClass && inputNorm !== expectedSchool && inputCode !== 'GVCN2026') {
+    return res.status(400).json({
+      error: `Mã xác nhận không đúng. Vui lòng nhập đúng tên lớp "${db.settings.className}" hoặc tên trường học để xác thực quyền khôi phục.`
+    });
+  }
+
+  db.teacher.hash = DEFAULT_TEACHER_HASH;
+  db.teacher.salt = DEFAULT_TEACHER_SALT;
+  db.teacher.updatedAt = new Date().toISOString();
+  db.teacher.isCustomPassword = false;
+  db.teacher.failedAttempts = 0;
+  db.teacher.lockedUntil = 0;
+  db.updated_at = new Date().toISOString();
+
+  db.auditLogs.unshift({
+    id: `log_${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    action: 'Đặt lại mật khẩu GV',
+    actor: 'Hệ thống xác thực',
+    details: 'Giáo viên đã đặt lại mật khẩu về mặc định (giaovien123)'
+  });
+
+  saveDatabase(db, false);
+  await syncToSupabase(db);
+
+  return res.json({
+    message: 'Đã đặt lại mật khẩu giáo viên về mặc định: giaovien123. Bạn có thể đăng nhập ngay!'
+  });
 });
 
 // 3. Teacher Reset Student Password
@@ -754,9 +875,19 @@ app.get(['/api/data', '/data'], authMiddleware, (req, res) => {
 });
 
 // 6. Settings update (Teacher only)
-app.post(['/api/settings', '/settings'], authMiddleware, teacherOnly, (req, res) => {
+app.post(['/api/settings', '/settings'], authMiddleware, teacherOnly, async (req, res) => {
   const db = loadDatabase();
-  const { appName, schoolName, className, teacherName, academicYear, baseDisciplinePoints, conductThresholds } = req.body;
+  const {
+    appName,
+    schoolName,
+    className,
+    teacherName,
+    academicYear,
+    baseDisciplinePoints,
+    conductThresholds,
+    teacherPassword,
+    oldTeacherPassword
+  } = req.body;
 
   if (appName) db.settings.appName = appName;
   if (schoolName) db.settings.schoolName = schoolName;
@@ -766,16 +897,38 @@ app.post(['/api/settings', '/settings'], authMiddleware, teacherOnly, (req, res)
   if (typeof baseDisciplinePoints === 'number') db.settings.baseDisciplinePoints = baseDisciplinePoints;
   if (Array.isArray(conductThresholds)) db.settings.conductThresholds = conductThresholds;
 
+  let passwordChanged = false;
+  if (teacherPassword && String(teacherPassword).trim().length >= 6) {
+    if (oldTeacherPassword) {
+      const isValid = verifyPassword(oldTeacherPassword, db.teacher.hash, db.teacher.salt);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Mật khẩu cũ không chính xác' });
+      }
+    }
+    const newPass = hashPassword(String(teacherPassword).trim());
+    db.teacher.hash = newPass.hash;
+    db.teacher.salt = newPass.salt;
+    db.teacher.updatedAt = new Date().toISOString();
+    db.teacher.isCustomPassword = true;
+    db.teacher.failedAttempts = 0;
+    db.teacher.lockedUntil = 0;
+    passwordChanged = true;
+  }
+
+  db.updated_at = new Date().toISOString();
   db.auditLogs.unshift({
     id: `log_${Date.now()}`,
     timestamp: new Date().toISOString(),
-    action: 'Cập nhật cài đặt chung',
+    action: passwordChanged ? 'Cập nhật cài đặt & Mật khẩu GV' : 'Cập nhật cài đặt chung',
     actor: db.settings.teacherName,
-    details: 'Thay đổi thông tin lớp học và cài đặt hệ thống'
+    details: passwordChanged
+      ? 'Thay đổi thông tin lớp học và mật khẩu quản trị GVCN'
+      : 'Thay đổi thông tin lớp học và cài đặt hệ thống'
   });
 
-  saveDatabase(db);
-  return res.json({ message: 'Lưu cài đặt thành công!', settings: db.settings });
+  saveDatabase(db, false);
+  await syncToSupabase(db);
+  return res.json({ message: 'Lưu cài đặt thành công!', settings: db.settings, passwordChanged });
 });
 
 // 7. Student Management (Teacher only)

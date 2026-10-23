@@ -13,6 +13,15 @@ export interface AppSettings {
   }[];
 }
 
+export interface PublicSettings {
+  appName: string;
+  schoolName: string;
+  className: string;
+  teacherName?: string;
+  academicYear?: string;
+  isDefaultTeacherPassword?: boolean;
+}
+
 export interface Student {
   id: string;
   studentCode: string;

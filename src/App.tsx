@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import { AuthState, AppData, Student } from './types';
+import { AuthState, AppData, Student, PublicSettings } from './types';
 import { apiRequest, getStoredToken, setStoredToken } from './utils/api';
 import { LoginModal } from './components/LoginModal';
 import { Sidebar, MainNavTab } from './components/Sidebar';
@@ -23,12 +23,7 @@ export default function App() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Public settings for login screen (cached in localStorage & synced from server)
-  const [publicSettings, setPublicSettings] = useState<{
-    appName: string;
-    schoolName: string;
-    className: string;
-    teacherName?: string;
-  }>(() => {
+  const [publicSettings, setPublicSettings] = useState<PublicSettings>(() => {
     try {
       const saved = localStorage.getItem('gvcn_public_settings');
       if (saved) return JSON.parse(saved);
@@ -51,27 +46,23 @@ export default function App() {
   const [isForcedInitialPassword, setIsForcedInitialPassword] = useState<boolean>(false);
 
   // Fetch public settings for login screen
-  useEffect(() => {
-    const fetchPublicInfo = async () => {
-      try {
-        const info = await apiRequest<{
-          appName: string;
-          schoolName: string;
-          className: string;
-          teacherName?: string;
-        }>('/api/public/info');
-        if (info && info.schoolName && info.className) {
-          setPublicSettings(info);
-          try {
-            localStorage.setItem('gvcn_public_settings', JSON.stringify(info));
-          } catch {}
-        }
-      } catch (err) {
-        // Ignore network error on public info, use cached fallback
+  const fetchPublicInfo = useCallback(async () => {
+    try {
+      const info = await apiRequest<PublicSettings>('/api/public/info');
+      if (info && info.schoolName && info.className) {
+        setPublicSettings(info);
+        try {
+          localStorage.setItem('gvcn_public_settings', JSON.stringify(info));
+        } catch {}
       }
-    };
-    fetchPublicInfo();
+    } catch (err) {
+      // Ignore network error on public info, use cached fallback
+    }
   }, []);
+
+  useEffect(() => {
+    fetchPublicInfo();
+  }, [fetchPublicInfo]);
 
   // Keep publicSettings in sync when full data is loaded or updated
   useEffect(() => {
@@ -170,6 +161,7 @@ export default function App() {
     setData(null);
     setSelectedStudentId(null);
     setCurrentTab('dashboard');
+    fetchPublicInfo();
   };
 
   // If not logged in, render LoginModal
@@ -179,6 +171,8 @@ export default function App() {
         appName={data?.settings?.appName || publicSettings.appName}
         className={data?.settings?.className || publicSettings.className}
         schoolName={data?.settings?.schoolName || publicSettings.schoolName}
+        isDefaultTeacherPassword={publicSettings.isDefaultTeacherPassword}
+        onRefreshPublicInfo={fetchPublicInfo}
         onLoginSuccess={handleLoginSuccess}
       />
     );
@@ -302,6 +296,7 @@ export default function App() {
                 ) : (
                   <StudentListView
                     data={data}
+                    role={auth.role}
                     onSelectStudent={(studentId) => setSelectedStudentId(studentId)}
                     onRefreshData={loadData}
                   />
@@ -354,6 +349,7 @@ export default function App() {
           if (auth.role === 'student') {
             setAuth((prev) => ({ ...prev, isInitialPassword: false }));
           }
+          fetchPublicInfo();
         }}
       />
     </div>

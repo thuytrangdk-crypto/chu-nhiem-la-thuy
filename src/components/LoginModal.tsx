@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, Key, GraduationCap, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import { LogIn, Key, GraduationCap, ShieldCheck, AlertCircle, RefreshCw, CheckCircle2, HelpCircle, X } from 'lucide-react';
 import { apiRequest, setStoredToken } from '../utils/api';
 import { AuthState } from '../types';
 
@@ -8,6 +8,8 @@ interface LoginModalProps {
   appName: string;
   className: string;
   schoolName: string;
+  isDefaultTeacherPassword?: boolean;
+  onRefreshPublicInfo?: () => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
@@ -15,12 +17,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   appName,
   className,
   schoolName,
+  isDefaultTeacherPassword,
+  onRefreshPublicInfo,
 }) => {
   const [role, setRole] = useState<'teacher' | 'student'>('teacher');
   const [password, setPassword] = useState('');
   const [studentCode, setStudentCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Forgot password dialog state
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotClassCode, setForgotClassCode] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +66,31 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
   };
 
+  const handleResetTeacherPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError(null);
+    setForgotSuccess(null);
+    setForgotLoading(true);
+
+    try {
+      const res = await apiRequest('/api/auth/teacher-forgot-password', {
+        method: 'POST',
+        body: { confirmationCode: forgotClassCode.trim() },
+      });
+      setForgotSuccess(res.message || 'Đã đặt lại mật khẩu về giaovien123');
+      setPassword('giaovien123');
+      if (onRefreshPublicInfo) onRefreshPublicInfo();
+      setTimeout(() => {
+        setIsForgotModalOpen(false);
+        setForgotSuccess(null);
+      }, 1800);
+    } catch (err: any) {
+      setForgotError(err.message || 'Không thể đặt lại mật khẩu');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#DCEFFA] via-[#EDF6FD] to-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-sky-900/5 border border-sky-100 overflow-hidden">
@@ -78,7 +114,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 setRole('teacher');
                 setErrorMessage(null);
               }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 role === 'teacher'
                   ? 'bg-white text-sky-800 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -93,7 +129,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 setRole('student');
                 setErrorMessage(null);
               }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 role === 'student'
                   ? 'bg-white text-sky-800 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -132,9 +168,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             )}
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                {role === 'teacher' ? 'Mật khẩu quản trị' : 'Mật khẩu'}
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-slate-700">
+                  {role === 'teacher' ? 'Mật khẩu quản trị' : 'Mật khẩu'}
+                </label>
+                {role === 'teacher' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotError(null);
+                      setForgotSuccess(null);
+                      setIsForgotModalOpen(true);
+                    }}
+                    className="text-[11px] text-sky-600 hover:text-sky-800 hover:underline cursor-pointer"
+                  >
+                    Quên mật khẩu?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type="password"
@@ -151,9 +202,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 <Key className="w-4 h-4 text-slate-400 absolute right-3.5 top-3" />
               </div>
               {role === 'teacher' ? (
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Mật khẩu mặc định: <span className="font-mono text-sky-700">giaovien123</span>
-                </p>
+                isDefaultTeacherPassword === false ? (
+                  <p className="text-[11px] text-emerald-700 mt-1 flex items-center gap-1.5 font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    Đã lưu mật khẩu giáo viên riêng của bạn (hãy nhập mật khẩu mới đã đổi)
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Mật khẩu ban đầu: <span className="font-mono text-sky-700 font-semibold">giaovien123</span>
+                  </p>
+                )
               ) : (
                 <p className="text-[11px] text-slate-500 mt-1">
                   Mật khẩu ban đầu là ngày sinh viết liền (vd: 15022008). Học sinh phải đổi mật khẩu khi đăng nhập lần đầu.
@@ -190,6 +248,88 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Emergency Forgot Password Modal */}
+      {isForgotModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
+                  <HelpCircle className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Khôi Phục Mật Khẩu GVCN
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsForgotModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetTeacherPassword} className="p-5 space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Để xác thực quyền giáo viên, vui lòng nhập chính xác <strong>Tên lớp</strong> (ví dụ: <span className="font-mono text-sky-700">{className}</span>) hoặc <strong>Tên trường học</strong>. Mật khẩu sẽ được đặt lại về mặc định: <span className="font-mono text-sky-700 font-semibold">giaovien123</span>.
+              </p>
+
+              {forgotError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                  <span>{forgotError}</span>
+                </div>
+              )}
+
+              {forgotSuccess && (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>{forgotSuccess}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Mã xác nhận (Tên lớp học)
+                </label>
+                <input
+                  type="text"
+                  placeholder={`Nhập ${className} để xác thực`}
+                  value={forgotClassCode}
+                  onChange={(e) => setForgotClassCode(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 uppercase font-mono"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsForgotModalOpen(false)}
+                  className="flex-1 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="flex-1 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {forgotLoading ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Đặt Lại Mật Khẩu'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

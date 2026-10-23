@@ -1,0 +1,1260 @@
+{
+  "grades": [
+    {
+      "id": "gr_1",
+      "note": "Làm bài xuất sắc",
+      "score": 9.5,
+      "attempt": 1,
+      "semester": "HK1",
+      "scoreType": "giua_ky",
+      "studentId": "st_1",
+      "subjectId": "sub_1",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    },
+    {
+      "id": "gr_2",
+      "note": "Văn phong mạch lạc",
+      "score": 8.5,
+      "attempt": 1,
+      "semester": "HK1",
+      "scoreType": "giua_ky",
+      "studentId": "st_1",
+      "subjectId": "sub_2",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    },
+    {
+      "id": "gr_3",
+      "note": "",
+      "score": 9,
+      "attempt": 1,
+      "semester": "HK1",
+      "scoreType": "giua_ky",
+      "studentId": "st_2",
+      "subjectId": "sub_1",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    },
+    {
+      "id": "gr_4",
+      "note": "",
+      "score": 7,
+      "attempt": 1,
+      "semester": "HK1",
+      "scoreType": "giua_ky",
+      "studentId": "st_3",
+      "subjectId": "sub_1",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    },
+    {
+      "id": "gr_5",
+      "note": "Top 1 khối",
+      "score": 9.8,
+      "attempt": 1,
+      "semester": "HK1",
+      "scoreType": "giua_ky",
+      "studentId": "st_5",
+      "subjectId": "sub_3",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    }
+  ],
+  "honors": [
+    {
+      "id": "hon_1",
+      "month": "Tháng 10/2025",
+      "title": "Học sinh xuất sắc",
+      "confirmed": true,
+      "studentId": "st_1",
+      "achievement": "Đạt điểm 10 kiểm tra khảo sát Toán và dẫn đầu phong trào thi đua lớp",
+      "studentName": "Nguyễn Văn An"
+    },
+    {
+      "id": "hon_2",
+      "month": "Tháng 10/2025",
+      "title": "Học sinh tích cực",
+      "confirmed": true,
+      "studentId": "st_5",
+      "achievement": "Nhiệt tình phụ trách văn nghệ, gương mẫu hỗ trợ bạn bè trong nhóm học tập",
+      "studentName": "Hoàng Thùy Dương"
+    }
+  ],
+  "teacher": {
+    "hash": "4ebd0f95a56aacdf80d2e1204228c4265b26b1ba76f9308f4b6d5db42623d7ec0f0431182dba34a971d7134316f21563fdde4b2b48c4cad84bd06dff9c6f390c",
+    "salt": "80fed89320a63def885b996b85dc993a",
+    "username": "admin",
+    "updatedAt": "2026-10-23T02:22:08.758Z",
+    "lockedUntil": 0,
+    "failedAttempts": 0,
+    "isCustomPassword": false
+  },
+  "settings": {
+    "appName": "GVCN",
+    "className": "9A2",
+    "schoolName": "Trường THCS Nguyễn Huệ",
+    "teacherName": "Cô Lã Thị Thủy",
+    "academicYear": "2026 - 2027",
+    "conductThresholds": [
+      {
+        "label": "Tốt",
+        "minScore": 90
+      },
+      {
+        "label": "Khá",
+        "minScore": 75
+      },
+      {
+        "label": "Đạt",
+        "minScore": 50
+      },
+      {
+        "label": "Chưa đạt",
+        "minScore": 0
+      }
+    ],
+    "baseDisciplinePoints": 100
+  },
+  "students": [
+    {
+      "id": "st_1792154981000_zlym",
+      "dob": "10/05/2012",
+      "phone": "0935002878",
+      "gender": "Nữ",
+      "account": {
+        "hash": "fed9c07ba2fdcadf784a7c6ea122d7c0c27deb925ef2fdf77f9b9d2278758afe1712632945faec6cdc2e27f4eeb662ee6218e249016ed8a96a27d10b964f7b9f",
+        "salt": "5b82e18f6e4149d635c5fde785063d3f",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "HUỲNH NGỌC VÂN ANH",
+      "studentCode": "7922179017"
+    },
+    {
+      "id": "st_1792154981001_5tth",
+      "dob": "14/12/2012",
+      "phone": "0979301174",
+      "gender": "Nam",
+      "account": {
+        "hash": "dd4aec319591ceac0f23c60892518b5a2080d8107c29b1f67572a31c3575dfdbc01194a5a66cde356255dd8a6c548c2a9ef7ae904660407e4fb47950faa27e1e",
+        "salt": "e8f217605c5cd960c3d326af8fa36e6a",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "VŨ PHẠM VIỆT ANH",
+      "studentCode": "7950571052"
+    },
+    {
+      "id": "st_1792154981002_p9ha",
+      "dob": "15/06/2012",
+      "phone": "0932335165",
+      "gender": "Nữ",
+      "account": {
+        "hash": "58e6a5dc475124f2e1ba1a28bf1681ce0c20f87bde140aedc6637261848eb4682d8d11808209dbb60df6a1d6e0553e48f1e9fe85bd8d44d21ef556444ed34e4f",
+        "salt": "7359d88e9044798a4f1d233ff6c1df06",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "LÊ THỊ MINH ANH",
+      "studentCode": "7950854615"
+    },
+    {
+      "id": "st_1792154981003_rjse",
+      "dob": "25/12/2012",
+      "phone": "0906360359",
+      "gender": "Nam",
+      "account": {
+        "hash": "9f70bf19dd68a69f8832a4b7dcd8712e10d8d872585d7ecf92e1dc9ca81866089f84581b9a5dc6f47a1775d8c50519f2efb7a009d84407925a63cedddbb7c54e",
+        "salt": "77e9b0a0bb68f1fbf43c68a1edafface",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN THIÊN ÂN",
+      "studentCode": "7936121550"
+    },
+    {
+      "id": "st_1792154981004_7lya",
+      "dob": "01/11/2012",
+      "phone": "0908808069",
+      "gender": "Nữ",
+      "account": {
+        "hash": "a64dd7679b519cfe7896b78a1b917fbef462a31e216f15806c320154622230ff9d9d9335ac1098308717a051346a2a46e218158b5b49cafdd5056b6428eba8dd",
+        "salt": "f5f1ec86ab9eac32393e4f0b4b7eb7b4",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "PHẠM NHÃ CA",
+      "studentCode": "7936114061"
+    },
+    {
+      "id": "st_1792154981005_z4k5",
+      "dob": "09/10/2012",
+      "phone": "0908688019",
+      "gender": "Nữ",
+      "account": {
+        "hash": "0a2b909c54ff7da59ba605b10b907ef56391516d19cd5d7ae4348c1665166488cbb9cd77c37348aada88e0ad9ba22c166f07fd38c6ef08ba5d2b19026c17a0c7",
+        "salt": "125f350e3fb0036abc43c115a71c74ec",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "LẠI XUÂN CHI",
+      "studentCode": "7940184215"
+    },
+    {
+      "id": "st_1792154981006_c8vl",
+      "dob": "16/10/2012",
+      "phone": "0932009910",
+      "gender": "Nữ",
+      "account": {
+        "hash": "8aef9f2ebcc3fbb861bf37380822967d623663af9dfd6d730173fb7b91878e73bf9e76e0bdf2f227862422d9daa013daaaeafb2bf73974171ae1754c9ee2175d",
+        "salt": "6f0cf5115ea4e62f3c92255a4156a097",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN MỸ DUYÊN",
+      "studentCode": "7977976954"
+    },
+    {
+      "id": "st_1792154981007_i0kw",
+      "dob": "21/07/2012",
+      "phone": "0976594088",
+      "gender": "Nam",
+      "account": {
+        "hash": "a533d92f3a3e086f80e314696088b889b16be44bee8fd67d3674256a2308e21a1417f9acc167878302896702085bcd2612d679cfa6b873650424f3e0d1965fcc",
+        "salt": "e3783470a606be4247ca70ccec3c6c97",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN HUỲNH TÂM ĐỨC",
+      "studentCode": "7936113718"
+    },
+    {
+      "id": "st_1792154981008_49w3",
+      "dob": "28/09/2012",
+      "phone": "0973327329",
+      "gender": "Nam",
+      "account": {
+        "hash": "b163075aec9086e37179abbd9e519da7dc15ced581ea6679b6c4d8d9089119b22d925973eeab6a9c9cb460bb54bf52d4975da343197043d826fefd351fed4ae0",
+        "salt": "a896dc8066a6b0754b7e58bc0003667b",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "PHAN ĐÌNH LONG GIANG",
+      "studentCode": "7919199944"
+    },
+    {
+      "id": "st_1792154981009_mq0j",
+      "dob": "13/03/2012",
+      "phone": "0909945128",
+      "gender": "Nam",
+      "account": {
+        "hash": "087d712078a15eb51cf1e46f354c1dc06cf37076daa5df445282a56c0103dc85aba270af6f98c7f5fdabf41e4fbdd7a3e290c70fc430b04fed07eb2bf65d48db",
+        "salt": "2481250ba5bdc22f09310258d014e298",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "DƯƠNG TRẤN HÀO",
+      "studentCode": "7936113557"
+    },
+    {
+      "id": "st_1792154981010_aski",
+      "dob": "16/03/2012",
+      "phone": "0901304479",
+      "gender": "Nữ",
+      "account": {
+        "hash": "31d86e88d86ef835320f96bbeba9d8e8633b2af707ea2c4cd8a935268aaeca5b58bf0c9b0f7b0e6e0ddbe8d4666bd148f1844611e87aa878a09676fcb8497a71",
+        "salt": "08995674dcaf6b664a20c546c27d4ca8",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN TRẦN BẢO HÂN",
+      "studentCode": "7936119543"
+    },
+    {
+      "id": "st_1792154981011_hba6",
+      "dob": "04/01/2012",
+      "phone": "0983930993",
+      "gender": "Nam",
+      "account": {
+        "hash": "91e73798a644d31c07b9ae82143e8f440de010610a8d974a27b6f1414f8df0cd80ac32f669f2d96cd91569705363772eea7a99838ba5ebc77d60737000d27e8a",
+        "salt": "61bd70b5fe97f758640020137624d456",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "CAO QUANG HUY",
+      "studentCode": "7950571109"
+    },
+    {
+      "id": "st_1792154981012_j3cm",
+      "dob": "12/06/2012",
+      "phone": "0767994579",
+      "gender": "Nam",
+      "account": {
+        "hash": "c38b85f27d08fb5252440251f2420c3145f31a2fa169b1d7b8b160eebe6a0eaa213c801388ef2e3110b46d807c79b56aeed512231be2c7eb3096e11a85fd440a",
+        "salt": "0bfbc4b984b3a369ec76fe94930d4224",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "PHẠM PHÚC HƯNG",
+      "studentCode": "7933172581"
+    },
+    {
+      "id": "st_1792154981013_y72l",
+      "dob": "05/12/2012",
+      "phone": "0908053402",
+      "gender": "Nam",
+      "account": {
+        "hash": "e689a3913456de066e553fe281fd2dc897d5bade3f07cd00d8544b50cf4deb13f2663676457d52f7156fb8f1dbd0a145b721cc86920610794611f983f9a424ad",
+        "salt": "9c2378ee7b479911e3d33d66a613fc6c",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN HỮU GIA KHANG",
+      "studentCode": "7950571267"
+    },
+    {
+      "id": "st_1792154981014_uhte",
+      "dob": "13/10/2012",
+      "phone": "0988650449",
+      "gender": "Nữ",
+      "account": {
+        "hash": "6ffba36bcef8ff818924625be2f4648355936c2f71a72e2c0e42ca048eb823eef9fecc4e6d5a7b5d3b4557a4a461da91edb92c112a7568239be11d3268684c97",
+        "salt": "832aab803fafc9317a23b004ee1a1861",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "VÕ NGỌC LAN KHUÊ",
+      "studentCode": "7950571013"
+    },
+    {
+      "id": "st_1792154981015_usgh",
+      "dob": "27/03/2012",
+      "phone": "0909317018",
+      "gender": "Nam",
+      "account": {
+        "hash": "f58f84662bad9cc667ea0d92f0c52dda02221f030a5c0aaaea47c38ee04dad3cbf5ecb14014ada3430d3e810d8bd7e6798c4c4476f4d5516d9487e45a0c58f6b",
+        "salt": "5d30fd3365073d8187eeb17a060c0b02",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "TRƯƠNG TUẤN KIỆT",
+      "studentCode": "7936113729"
+    },
+    {
+      "id": "st_1792154981016_s7lp",
+      "dob": "28/08/2012",
+      "phone": "0902616710",
+      "gender": "Nữ",
+      "account": {
+        "hash": "54f9ebb6bcdf4265979188e724c9b4784245ba287537d99c32acfea59b9a531a70b3cd12d912b15ffc8a45b12026a102f44835035e265426c56898a61c4a543c",
+        "salt": "8811a6eb9b6d66f4abc733586a575f5f",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "TRẦN NGỌC TƯỜNG LAM",
+      "studentCode": "7925854692"
+    },
+    {
+      "id": "st_1792154981017_w1aa",
+      "dob": "14/08/2012",
+      "phone": "0567891099",
+      "gender": "Nam",
+      "account": {
+        "hash": "1bffe759c39c95e2c31cf24c086f7b119c5c50470189031e08be955415b046a63aa8141320d4916363030c4d1b677ced5743fb20276837e553bcc3926b10ac0a",
+        "salt": "696e53473efe77ea492ef23844dbc6a3",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN PHÚC LÂM",
+      "studentCode": "7936113744"
+    },
+    {
+      "id": "st_1792154981018_oqp8",
+      "dob": "22/01/2012",
+      "phone": "0932612063",
+      "gender": "Nữ",
+      "account": {
+        "hash": "655a59b8902d2f1c972d402ba19ddcb1279427754cfcd25f7b4d8ccfd60bf8cd8d134db636c97fd3470ca1fe74ad00cb725c69b1c7b48dfd87ba23649e9c0d03",
+        "salt": "2ff5b5ba34f3e8e47027f3c14da4131e",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN AN LINH",
+      "studentCode": "7936120446"
+    },
+    {
+      "id": "st_1792154981019_x9sf",
+      "dob": "01/12/2012",
+      "phone": "0902153541",
+      "gender": "Nữ",
+      "account": {
+        "hash": "617af5f6192134497842bfb34a6def08e65d1550a4a5963d44cca7e7a513d81d9e8cbe61b26e593663e386095b06e46bc6065e84ba45046187ab08c5f3cf1385",
+        "salt": "ad614b2728db5280c68f3c0a5f245e6b",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "DƯƠNG NGUYỄN BẢO LINH",
+      "studentCode": "7936120099"
+    },
+    {
+      "id": "st_1792154981021_vb26",
+      "dob": "27/04/2012",
+      "phone": "0903901048",
+      "gender": "Nam",
+      "account": {
+        "hash": "bedc4b8c4d5ccf6c2fe8c1c133f3f2f713ea0747583505498fa9214630247bc184f1f3dac191ef1608f508f3ae1c0b149b84f62c3890d9daddc4fc9d3a6b6b12",
+        "salt": "3a8658a041ed746559c3766b884106f4",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "LÊ BẢO LONG",
+      "studentCode": "7925855755"
+    },
+    {
+      "id": "st_1792154981022_qli3",
+      "dob": "09/08/2012",
+      "phone": "0902717978",
+      "gender": "Nam",
+      "account": {
+        "hash": "787caf5f72f446c2af3e3bb4a26fa82ff86576b1f28782150ce65b9760e624a2321d3dd60af61dd48e7a45392d0beef4f1ef4fd7fb51ab39e2a3e0fa614406b6",
+        "salt": "2461ae6ea85de238ae5c1c2c518cc6cb",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "DƯƠNG BẢO MINH",
+      "studentCode": "7936120372"
+    },
+    {
+      "id": "st_1792154981023_t4vh",
+      "dob": "19/10/2012",
+      "phone": "0903136427",
+      "gender": "Nam",
+      "account": {
+        "hash": "31a03b2f1d8e0db7fb38b9f05f4d839b98859e8c12c2cb2d2f2de63199488d916b606f309348860d0e8eecf5329870188f95df3b884b80b991f93f9ab9edf904",
+        "salt": "539b89215f1812f27d59e2c10ce265eb",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN QUANG MINH",
+      "studentCode": "7925856218"
+    },
+    {
+      "id": "st_1792154981024_41wn",
+      "dob": "31/07/2012",
+      "phone": "0939783031",
+      "gender": "Nữ",
+      "account": {
+        "hash": "028d8bcea34c252ee41e9e1bb1f0aefa6defa832be8b439e955b2e4c2991c7e35720e55d66d39f0719467514c759c532195a3d43187dea20a99db91b57bdb9d4",
+        "salt": "65f7a2c5c3de682485af55470ba8a4e1",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN PHAN HOÀNG MY",
+      "studentCode": "7936120655"
+    },
+    {
+      "id": "st_1792154981025_ycy7",
+      "dob": "15/11/2012",
+      "phone": "0947776939",
+      "gender": "Nữ",
+      "account": {
+        "hash": "287f5e4029f59efdf5d3db3d723c6a9b8db7cad546aba4962090c187e1e65054bef5f2ab789e7af8e2e542113c35613d5afb0770e32fe648ddd2dd104fb02476",
+        "salt": "384d6631bed288a65500834ed3b1aac9",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "PHẠM QUỲNH KHÁNH NGÂN",
+      "studentCode": "7981124246"
+    },
+    {
+      "id": "st_1792154981026_2av8",
+      "dob": "16/03/2012",
+      "phone": "0908847711",
+      "gender": "Nữ",
+      "account": {
+        "hash": "800133c667f42b575505d5bb7844b3c9b3b6105c71ee900ba04a81206cd4a0bf968a749d8f66f781e845281a6c76a0f3ac9d3b674bdefcd0a22b9d7a6edc9f8b",
+        "salt": "f7bfcbed21d1f719b0ea55acb9ec2638",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN NGỌC QUỲNH NGHI",
+      "studentCode": "7936120657"
+    },
+    {
+      "id": "st_1792154981027_2kxl",
+      "dob": "10/04/2012",
+      "phone": "0908167676",
+      "gender": "Nữ",
+      "account": {
+        "hash": "b3783faf9629d4b431b1092c146fdcb936be6daf304251c3eeb042ae0b6872c1d964b0db12850e66626a735f39cb43bfea62c2268fcf9ea582e9e50c29a605c5",
+        "salt": "ee92e880b9f9f1a7e32ed36a548ae163",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "LÊ HOÀNG BẢO NGỌC",
+      "studentCode": "7925856174"
+    },
+    {
+      "id": "st_1792154981028_l9wd",
+      "dob": "04/01/2012",
+      "phone": "0982796670",
+      "gender": "Nữ",
+      "account": {
+        "hash": "6c5c6295cd8a807b85280da39d12fef6b7fe1f2da04dcd12a28f359fa1f1899fc1ff49f8116d4b886546995cc9d32bf0ec89d81f0f4677df613018bf28ac497e",
+        "salt": "25cd4615de231720252731a7a98700b0",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN HỒNG BẢO NGỌC",
+      "studentCode": "7936120729"
+    },
+    {
+      "id": "st_1792154981029_dwy1",
+      "dob": "16/09/2012",
+      "phone": "0909797776",
+      "gender": "Nữ",
+      "account": {
+        "hash": "bf5c2ac288af409b7eedadd2369244e360247045c3a8e9c56d4ed7ac55afd47c674ed2339f039539307f6ab85e73ab0fec553dcdd0d042f3d3f43b303fbc508f",
+        "salt": "ceb20c8d3e7b6d12edd474c4687be81b",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "DIỆP ĐÔNG NHI",
+      "studentCode": "7950571085"
+    },
+    {
+      "id": "st_1792154981030_aip1",
+      "dob": "29/02/2012",
+      "phone": "0909468439",
+      "gender": "Nữ",
+      "account": {
+        "hash": "a1f1b02f364be55af8e563cad36cd982c030ad4e65db4218924b8727e411826a0644bd3af0bef698126f46bbbbfe60d5cfbcc732b3c853e1589513cf70066999",
+        "salt": "498eeae9cf44c0802a08230b1d546b15",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN MINH HẠO NHIÊN",
+      "studentCode": "7925856944"
+    },
+    {
+      "id": "st_1792154981031_xpex",
+      "dob": "17/09/2012",
+      "phone": "0902764639",
+      "gender": "Nữ",
+      "account": {
+        "hash": "66c16a7157e556cb1bad947aaff4aa6be9e4a16d1c43d3c67d021070f5066678e1a4fcc4a111afae57b1fa4830e13a76d1eafa9f14f4acbb171a3787225506fb",
+        "salt": "62075edd6e6dea1d0bf0a8cd85665a8a",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "PHẠM NGỌC QUỲNH NHƯ",
+      "studentCode": "7936113584"
+    },
+    {
+      "id": "st_1792154981032_ys40",
+      "dob": "22/11/2012",
+      "phone": "0915090008",
+      "gender": "Nam",
+      "account": {
+        "hash": "469ec2850a32b04990d59f9753456d2218be936e41b7ccbcdde848282510d8e27522362586d861e52e86e1c9f1c63ef0d8e9d0e7d3e12efb8380bfd9c214e9d4",
+        "salt": "81efc2b4c9c44bd4a4a6b5524aef7b2c",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "LÊ VŨ GIA PHÚ",
+      "studentCode": "7936121146"
+    },
+    {
+      "id": "st_1792154981033_gjdn",
+      "dob": "11/11/2012",
+      "phone": "0902995707",
+      "gender": "Nam",
+      "account": {
+        "hash": "a09261523118c6e3cca165fffcf3a30fb19ffc02d7839bdc371ed07e3a7e8f2d860063999c2a3c0b4121c4acc824aa95e9f3e1360b37d9f854a3e4c35d7faecf",
+        "salt": "a625bb58c122e6f4aa976fbd7dc69ea1",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "LÊ HÀ GIA PHÚC",
+      "studentCode": "7950571031"
+    },
+    {
+      "id": "st_1792154981034_8g6p",
+      "dob": "26/10/2012",
+      "phone": "0909399327",
+      "gender": "Nam",
+      "account": {
+        "hash": "83bdfbcbe6ff6a9ac4fc0cbc198842930ddaba8b7bb215bc3054f57e39665b17315fbade426e8cda8532ddf4d4d8f8c4a93d84511fe8dc4b2874c5a072659588",
+        "salt": "c07124f28bde4e413841ccc405669f7d",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN QUANG PHƯỚC",
+      "studentCode": "7936113597"
+    },
+    {
+      "id": "st_1792154981035_6ta0",
+      "dob": "13/09/2012",
+      "phone": "0916330505",
+      "gender": "Nam",
+      "account": {
+        "hash": "1453fec9d0920b402d8a616cd7b1e8923faf9b2e581bd24fa4ee8b84d19f944f84a5fcc01c4b6c6b8a35f63da1f42cebeddbe5578f222d39abcfb218c165e672",
+        "salt": "e8a0fd0ccb3658f28754e8bdf1d5ea8c",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN MINH QUÂN",
+      "studentCode": "7950570503"
+    },
+    {
+      "id": "st_1792154981036_6tpj",
+      "dob": "23/10/2012",
+      "phone": "0938707478",
+      "gender": "Nam",
+      "account": {
+        "hash": "beb23fd029e3a0fd96c55cbe5d0f1d1d0431892b1868f046779416390d028f0ec3a56d9d7beecf4750c4832f3c5b711e103aae6fe01d2d0296336df7b9c9d12d",
+        "salt": "5cd7cf798a9cd2ec0a4ccc89e953d174",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN HỒNG THÀNH",
+      "studentCode": "7936121284"
+    },
+    {
+      "id": "st_1792154981037_2o9h",
+      "dob": "01/09/2012",
+      "phone": "0909498294",
+      "gender": "Nam",
+      "account": {
+        "hash": "be7649079db26a72fc7d6c5a4fdf2c2a95ffb92fcdaecab98411c44d541ab50322c9badf57efa61896d613c57750e0aecac6a4aaf81db3b17bb2cf81eb240407",
+        "salt": "bb389f2c08dac296da432762d593c50d",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "BỒ NGUYỄN PHÚC THỊNH",
+      "studentCode": "7920557275"
+    },
+    {
+      "id": "st_1792154981038_c04x",
+      "dob": "15/04/2012",
+      "phone": "0989727674",
+      "gender": "Nữ",
+      "account": {
+        "hash": "f6a83199998e3df0597537b7e87cde6983c38e6b5b2fe92fb7762d7c43fb02c7b9b79a1fbcc7242ba2f25b45e5c32d34f09dada6d6fcb6e706d46d026a261990",
+        "salt": "24eba1c16ec0b9f203e4a765c944ed39",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "HỒ SONG THY",
+      "studentCode": "7536114017"
+    },
+    {
+      "id": "st_1792154981039_43pr",
+      "dob": "17/11/2012",
+      "phone": "0934112499",
+      "gender": "Nữ",
+      "account": {
+        "hash": "9d006c6cf94d207cc5cc8b6f9ed539d0e107f1e2f2d078a6d005d05574b02479786cbff92babd82c219f0a01ecf35e7939c1e50c803dfd96d9eff931bb1668a1",
+        "salt": "04b2eeec64a9ebd80a88f661b913b029",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "PHẠM NGUYỄN YẾN TRANG",
+      "studentCode": "7927077124"
+    },
+    {
+      "id": "st_1792154981041_cbse",
+      "dob": "03/08/2012",
+      "phone": "0778639670",
+      "gender": "Nam",
+      "account": {
+        "hash": "a3b91ace9d75aaac6fb8545eb14efa2c911fa824287003b084da3d481d6b7addfc4385560ef2239f5b14a86a9821d65d4d923af82938e3b1050748c31400a4fa",
+        "salt": "7aa9ff71025f2a77c4abd441f052c077",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN VÕ ANH TRƯỜNG",
+      "studentCode": "7936114229"
+    },
+    {
+      "id": "st_1792154981042_2al5",
+      "dob": "18/10/2012",
+      "phone": "0988203219",
+      "gender": "Nam",
+      "account": {
+        "hash": "ea629d475f31ce11c7ee32d333286d415f3871412e35f4806c09675c9e2dcea6b2a8954d771c990ae0ea41c639924046eee81c6b0a60bf66f4aec9150e33f5c2",
+        "salt": "463f3b20f765ff3e85743ef50edea5d1",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN ĐĂNG ANH TUẤN",
+      "studentCode": "7936113962"
+    },
+    {
+      "id": "st_1792154981043_zmx4",
+      "dob": "23/05/2012",
+      "phone": "0909005088",
+      "gender": "Nữ",
+      "account": {
+        "hash": "8b7739973068ad9f9414b0f928e37e4ca2a5f53fba4b14b8433d7959ce1aa94cf8b7ee1745d8dcb9d9f496abbb28d4e16b58974843840f51b76a29b718715164",
+        "salt": "1499934ddb92d7a001de173e92eec1d6",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "TRẦN KHÁNH VÂN",
+      "studentCode": "7925859806"
+    },
+    {
+      "id": "st_1792154981044_arcv",
+      "dob": "20/09/2012",
+      "phone": "0903908182",
+      "gender": "Nữ",
+      "account": {
+        "hash": "81bd7b214b8d6f0a4cbe42272c86c29f3da3ed258be9ce3c0506c2d51699a27d591daa65765f4c204af63debb1e2755f16bc451df8f7badada444237caaf4647",
+        "salt": "3356ac6b33b8f5e95629b81d4c5ee24e",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NHAN HUỲNH THẢO VY",
+      "studentCode": "7925859704"
+    },
+    {
+      "id": "st_1792154981045_00sf",
+      "dob": "02/07/2012",
+      "phone": "0938270261",
+      "gender": "Nữ",
+      "account": {
+        "hash": "122ef7f922f363371796d9111eed96fa0149b36f00ac6e1c3d967e195b95544042449c1d7456e057b737cc52746941e4e8e601cdd4880ece653a20e3d6a6b2d8",
+        "salt": "713fb93f08c1471d8c664d72ceb7f5f3",
+        "lockedUntil": 0,
+        "failedAttempts": 0,
+        "isInitialPassword": true
+      },
+      "fullName": "NGUYỄN THỊ NHƯ Ý",
+      "studentCode": "7950570857"
+    }
+  ],
+  "subjects": [
+    {
+      "id": "sub_1",
+      "name": "Toán học",
+      "order": 1,
+      "isActive": true
+    },
+    {
+      "id": "sub_2",
+      "name": "Ngữ văn",
+      "order": 2,
+      "isActive": true
+    },
+    {
+      "id": "sub_3",
+      "name": "Tiếng Anh",
+      "order": 3,
+      "isActive": true
+    },
+    {
+      "id": "sub_4",
+      "name": "Vật lí",
+      "order": 4,
+      "isActive": true
+    },
+    {
+      "id": "sub_5",
+      "name": "Hóa học",
+      "order": 5,
+      "isActive": true
+    },
+    {
+      "id": "sub_6",
+      "name": "Sinh học",
+      "order": 6,
+      "isActive": true
+    },
+    {
+      "id": "sub_7",
+      "name": "Lịch sử",
+      "order": 7,
+      "isActive": true
+    },
+    {
+      "id": "sub_8",
+      "name": "Địa lí",
+      "order": 8,
+      "isActive": true
+    },
+    {
+      "id": "sub_9",
+      "name": "GDCD",
+      "order": 9,
+      "isActive": true
+    },
+    {
+      "id": "sub_10",
+      "name": "Tin học",
+      "order": 10,
+      "isActive": true
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log_1792722128758",
+      "timestamp": "2026-10-23T02:22:08.758Z",
+      "action": "Đặt lại mật khẩu GV",
+      "actor": "Hệ thống xác thực",
+      "details": "Giáo viên đã đặt lại mật khẩu về mặc định (giaovien123)"
+    },
+    {
+      "id": "log_1792722112839",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Đổi mật khẩu GV",
+      "details": "Giáo viên đã đổi mật khẩu quản trị thành công và lưu vĩnh viễn",
+      "timestamp": "2026-10-23T02:21:52.839Z"
+    },
+    {
+      "id": "log_1792722101473",
+      "actor": "Hệ thống xác thực",
+      "action": "Đặt lại mật khẩu GV",
+      "details": "Giáo viên đã đặt lại mật khẩu về mặc định (giaovien123)",
+      "timestamp": "2026-10-23T02:21:41.473Z"
+    },
+    {
+      "id": "log_1792721995017",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Cập nhật cài đặt & Mật khẩu GV",
+      "details": "Thay đổi thông tin lớp học và mật khẩu quản trị GVCN",
+      "timestamp": "2026-10-23T02:19:55.017Z"
+    },
+    {
+      "id": "log_1792721984954",
+      "actor": "Hệ thống xác thực",
+      "action": "Đặt lại mật khẩu GV",
+      "details": "Giáo viên đã đặt lại mật khẩu về mặc định (giaovien123)",
+      "timestamp": "2026-10-23T02:19:44.954Z"
+    },
+    {
+      "id": "log_1792721984699",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Đổi mật khẩu GV",
+      "details": "Giáo viên đã đổi mật khẩu quản trị thành công và lưu vĩnh viễn",
+      "timestamp": "2026-10-23T02:19:44.699Z"
+    },
+    {
+      "id": "log_1792721191670",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Đổi mật khẩu GV",
+      "details": "Giáo viên đã đổi mật khẩu quản trị",
+      "timestamp": "2026-10-23T02:06:31.670Z"
+    },
+    {
+      "id": "log_1792155199231",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Lê Hoàng Cường (HS003)",
+      "timestamp": "2026-10-16T12:53:19.231Z"
+    },
+    {
+      "id": "log_1792155195667",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Hoàng Thùy Dương (HS005)",
+      "timestamp": "2026-10-16T12:53:15.667Z"
+    },
+    {
+      "id": "log_1792155192240",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Phan Quốc Việt (HS012)",
+      "timestamp": "2026-10-16T12:53:12.240Z"
+    },
+    {
+      "id": "log_1792155189351",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Ngô Khánh Linh (HS009)",
+      "timestamp": "2026-10-16T12:53:09.351Z"
+    },
+    {
+      "id": "log_1792155185492",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Mai Thanh Nga (HS011)",
+      "timestamp": "2026-10-16T12:53:05.492Z"
+    },
+    {
+      "id": "log_1792155183067",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Đỗ Quang Minh (HS010)",
+      "timestamp": "2026-10-16T12:53:03.067Z"
+    },
+    {
+      "id": "log_1792155180255",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Bùi Đức Long (HS008)",
+      "timestamp": "2026-10-16T12:53:00.255Z"
+    },
+    {
+      "id": "log_1792155177522",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Đặng Tuấn Hải (HS006)",
+      "timestamp": "2026-10-16T12:52:57.522Z"
+    },
+    {
+      "id": "log_1792155175435",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Vũ Thị Ngọc Hoa (HS007)",
+      "timestamp": "2026-10-16T12:52:55.435Z"
+    },
+    {
+      "id": "log_1792155170437",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Phạm Minh Dũng (HS004)",
+      "timestamp": "2026-10-16T12:52:50.437Z"
+    },
+    {
+      "id": "log_1792155168243",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Trần Thị Bích (HS002)",
+      "timestamp": "2026-10-16T12:52:48.243Z"
+    },
+    {
+      "id": "log_1792155164651",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Xóa học sinh",
+      "details": "Đã xóa học sinh Nguyễn Văn An (HS001)",
+      "timestamp": "2026-10-16T12:52:44.651Z"
+    },
+    {
+      "id": "log_1792155072106",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Cập nhật cài đặt chung",
+      "details": "Thay đổi thông tin lớp học và cài đặt hệ thống",
+      "timestamp": "2026-10-16T12:51:12.106Z"
+    },
+    {
+      "id": "log_1792154981045",
+      "actor": "Cô Lã Thị Thủy",
+      "action": "Nhập danh sách học sinh bằng Excel",
+      "details": "Nhập thành công: 44 học sinh mới, cập nhật 0 học sinh",
+      "timestamp": "2026-10-16T12:49:41.045Z"
+    },
+    {
+      "id": "log_init",
+      "actor": "Hệ thống",
+      "action": "Khởi tạo hệ thống",
+      "details": "Khởi tạo dữ liệu lớp chủ nhiệm ban đầu thành công",
+      "timestamp": "2026-10-16T12:49:40.997Z"
+    }
+  ],
+  "attendance": [
+    {
+      "id": "att_1",
+      "date": "2026-10-16",
+      "source": "manual",
+      "status": "present",
+      "studentId": "st_1",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    },
+    {
+      "id": "att_2",
+      "date": "2026-10-16",
+      "source": "manual",
+      "status": "present",
+      "studentId": "st_2",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    },
+    {
+      "id": "att_3",
+      "date": "2026-10-16",
+      "source": "discipline_sync",
+      "status": "late",
+      "studentId": "st_3",
+      "updatedAt": "2026-10-16T12:49:40.967Z",
+      "linkedDisciplineId": "disc_2"
+    },
+    {
+      "id": "att_4",
+      "date": "2026-10-16",
+      "source": "manual",
+      "status": "present",
+      "studentId": "st_4",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    },
+    {
+      "id": "att_5",
+      "date": "2026-10-16",
+      "source": "manual",
+      "status": "present",
+      "studentId": "st_5",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    },
+    {
+      "id": "att_6",
+      "date": "2026-10-16",
+      "source": "manual",
+      "status": "excused_absence",
+      "studentId": "st_6",
+      "updatedAt": "2026-10-16T12:49:40.967Z"
+    }
+  ],
+  "updated_at": "2026-10-23T02:22:08.998Z",
+  "seatingChart": {
+    "seats": {
+      "R1-D1-S1": null,
+      "R1-D1-S2": null,
+      "R1-D2-S1": null,
+      "R1-D2-S2": null,
+      "R1-D3-S1": null,
+      "R1-D3-S2": null,
+      "R1-D4-S1": null,
+      "R1-D4-S2": null,
+      "R1-D5-S1": null,
+      "R1-D5-S2": null,
+      "R1-D6-S1": null,
+      "R1-D6-S2": null,
+      "R1-D7-S1": null,
+      "R1-D7-S2": null,
+      "R2-D1-S1": null,
+      "R2-D1-S2": null,
+      "R2-D2-S1": null,
+      "R2-D2-S2": null,
+      "R2-D3-S1": null,
+      "R2-D3-S2": null,
+      "R2-D4-S1": null,
+      "R2-D4-S2": null,
+      "R2-D5-S1": null,
+      "R2-D5-S2": null,
+      "R2-D6-S1": null,
+      "R2-D6-S2": null,
+      "R2-D7-S1": null,
+      "R2-D7-S2": null,
+      "R3-D1-S1": null,
+      "R3-D1-S2": null,
+      "R3-D2-S1": null,
+      "R3-D2-S2": null,
+      "R3-D3-S1": null,
+      "R3-D3-S2": null,
+      "R3-D4-S1": null,
+      "R3-D4-S2": null,
+      "R3-D5-S1": null,
+      "R3-D5-S2": null,
+      "R3-D6-S1": null,
+      "R3-D6-S2": null,
+      "R3-D7-S1": null,
+      "R3-D7-S2": null,
+      "R4-D1-S1": null,
+      "R4-D1-S2": null,
+      "R4-D2-S1": null,
+      "R4-D2-S2": null,
+      "R4-D3-S1": null,
+      "R4-D3-S2": null,
+      "R4-D4-S1": null,
+      "R4-D4-S2": null,
+      "R4-D5-S1": null,
+      "R4-D5-S2": null,
+      "R4-D6-S1": null,
+      "R4-D6-S2": null,
+      "R4-D7-S1": null,
+      "R4-D7-S2": null
+    },
+    "lastSaved": "2026-10-16T12:49:40.997Z"
+  },
+  "announcements": [
+    {
+      "id": "ann_1",
+      "date": "12:49:40 16/10/2026",
+      "title": "Kế hoạch học tập & Sinh hoạt ngoại khóa Tuần 10",
+      "author": "Cô Nguyễn Thu Trang (GVCN)",
+      "content": "Kính gửi toàn thể học sinh lớp 12A1: Tuần này lớp chúng ta có bài kiểm tra giữa kỳ môn Toán và Vật lý. Các em chú ý ôn tập kỹ lưỡng theo đề cương đã phát. Thứ Bảy tuần này lớp tham gia buổi lao động dọn dẹp khuôn viên trường lúc 7h30 sáng.",
+      "category": "Học tập",
+      "isPinned": true
+    },
+    {
+      "id": "ann_2",
+      "date": "12:49:40 14/10/2026",
+      "title": "Nhắc nhở nề nếp trang phục và chuyên cần",
+      "author": "Cô Nguyễn Thu Trang (GVCN)",
+      "content": "Đề nghị tất cả học sinh mặc đồng phục đúng quy định, đeo thẻ học sinh và đi học đúng giờ trước 6h45 hàng ngày. Ban cán sự lớp theo dõi sổ theo dõi thi đua và báo cáo GVCN vào cuối mỗi buổi học.",
+      "category": "Nhắc nhở",
+      "isPinned": false
+    }
+  ],
+  "disciplineRules": [
+    {
+      "id": "rule_1",
+      "name": "Đi học muộn",
+      "group": "Chuyên cần",
+      "points": -2,
+      "isActive": true,
+      "linkedAttendance": "late"
+    },
+    {
+      "id": "rule_2",
+      "name": "Vắng không phép",
+      "group": "Chuyên cần",
+      "points": -5,
+      "isActive": true,
+      "linkedAttendance": "unexcused_absence"
+    },
+    {
+      "id": "rule_3",
+      "name": "Vắng có phép",
+      "group": "Chuyên cần",
+      "points": 0,
+      "isActive": true,
+      "linkedAttendance": "excused_absence"
+    },
+    {
+      "id": "rule_4",
+      "name": "Không làm bài tập về nhà",
+      "group": "Học tập",
+      "points": -3,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_5",
+      "name": "Nói chuyện riêng trong giờ",
+      "group": "Nề nếp",
+      "points": -2,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_6",
+      "name": "Vi phạm đồng phục / tác phong",
+      "group": "Nề nếp",
+      "points": -2,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_7",
+      "name": "Phát biểu xây dựng bài sôi nổi",
+      "group": "Học tập",
+      "points": 2,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_8",
+      "name": "Đạt điểm 9, 10 bài kiểm tra",
+      "group": "Học tập",
+      "points": 3,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_9",
+      "name": "Giúp đỡ bạn bè tiến bộ",
+      "group": "Phong trào",
+      "points": 3,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_10",
+      "name": "Tham gia tích cực phong trào trường/lớp",
+      "group": "Phong trào",
+      "points": 5,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_11",
+      "name": "Trực nhật lớp sạch sẽ, đúng giờ",
+      "group": "Nề nếp",
+      "points": 2,
+      "isActive": true,
+      "linkedAttendance": "none"
+    },
+    {
+      "id": "rule_12",
+      "name": "Được tuyên dương cấp trường",
+      "group": "Phong trào",
+      "points": 10,
+      "isActive": true,
+      "linkedAttendance": "none"
+    }
+  ],
+  "disciplineEvents": [
+    {
+      "id": "disc_1",
+      "date": "2026-10-16",
+      "note": "Xung phong giải bài tập Toán khó",
+      "points": 2,
+      "ruleId": "rule_7",
+      "ruleName": "Phát biểu xây dựng bài sôi nổi",
+      "createdAt": "2026-10-16T12:49:40.967Z",
+      "studentId": "st_1",
+      "linkedAttendanceId": null
+    },
+    {
+      "id": "disc_2",
+      "date": "2026-10-16",
+      "note": "Đi muộn 15 phút tiết 1 do hỏng xe",
+      "points": -2,
+      "ruleId": "rule_1",
+      "ruleName": "Đi học muộn",
+      "createdAt": "2026-10-16T12:49:40.967Z",
+      "studentId": "st_3",
+      "linkedAttendanceId": "att_3"
+    },
+    {
+      "id": "disc_3",
+      "date": "2026-10-16",
+      "note": "Tổ chức tiết mục văn nghệ chào mừng 20/11",
+      "points": 5,
+      "ruleId": "rule_10",
+      "ruleName": "Tham gia tích cực phong trào trường/lớp",
+      "createdAt": "2026-10-16T12:49:40.967Z",
+      "studentId": "st_5",
+      "linkedAttendanceId": null
+    }
+  ]
+}

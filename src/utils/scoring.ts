@@ -1,32 +1,71 @@
 import { DisciplineEvent, AttendanceRecord, AppSettings } from '../types';
 
+export interface DateRangeFilter {
+  startDate?: string; // format: 'YYYY-MM-DD'
+  endDate?: string;   // format: 'YYYY-MM-DD'
+}
+
 export function calculateDisciplineScore(
   studentId: string,
   events: DisciplineEvent[],
   basePoints: number,
-  selectedMonth?: string // format: 'YYYY-MM' or 'all'
+  periodFilter?: string | DateRangeFilter // format: 'YYYY-MM' | 'all' | { startDate, endDate }
 ): {
   totalScore: number;
   deltaPoints: number;
+  positivePoints: number;
+  negativePoints: number; // positive number (e.g. 5 for -5 points)
   positiveCount: number;
   negativeCount: number;
   filteredEvents: DisciplineEvent[];
 } {
-  const studentEvents = events.filter((e) => e.studentId === studentId);
+  // Deduplicate events to ensure no duplicate event is processed
+  const studentEvents: DisciplineEvent[] = [];
+  const seenIds = new Set<string>();
+
+  for (const e of events) {
+    if (e.studentId === studentId) {
+      if (e.id) {
+        if (seenIds.has(e.id)) continue;
+        seenIds.add(e.id);
+      }
+      studentEvents.push(e);
+    }
+  }
 
   const filteredEvents = studentEvents.filter((e) => {
-    if (!selectedMonth || selectedMonth === 'all') return true;
-    return e.date.startsWith(selectedMonth);
+    if (!periodFilter || periodFilter === 'all') return true;
+
+    if (typeof periodFilter === 'string') {
+      return e.date.startsWith(periodFilter);
+    }
+
+    // Object with startDate and/or endDate (inclusive, formatted as YYYY-MM-DD)
+    const evDate = (e.date || '').slice(0, 10);
+    if (!evDate) return false;
+
+    if (periodFilter.startDate && evDate < periodFilter.startDate) return false;
+    if (periodFilter.endDate && evDate > periodFilter.endDate) return false;
+
+    return true;
   });
 
   let deltaPoints = 0;
   let positiveCount = 0;
   let negativeCount = 0;
+  let positivePoints = 0;
+  let negativePoints = 0;
 
   for (const ev of filteredEvents) {
-    deltaPoints += ev.points;
-    if (ev.points > 0) positiveCount++;
-    if (ev.points < 0) negativeCount++;
+    const pts = typeof ev.points === 'number' ? ev.points : Number(ev.points) || 0;
+    deltaPoints += pts;
+    if (pts > 0) {
+      positiveCount++;
+      positivePoints += pts;
+    } else if (pts < 0) {
+      negativeCount++;
+      negativePoints += Math.abs(pts);
+    }
   }
 
   const totalScore = basePoints + deltaPoints;
@@ -34,6 +73,8 @@ export function calculateDisciplineScore(
   return {
     totalScore,
     deltaPoints,
+    positivePoints,
+    negativePoints,
     positiveCount,
     negativeCount,
     filteredEvents,
