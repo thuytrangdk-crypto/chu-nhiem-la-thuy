@@ -254,6 +254,7 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
         body: {
           students: parsedRows,
           clearOldStudents: clearOldStudents,
+          clientVersion: data.updated_at,
         },
       });
       alert(res.message);

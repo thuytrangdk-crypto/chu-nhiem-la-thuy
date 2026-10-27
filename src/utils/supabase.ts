@@ -7,33 +7,32 @@ const SUPABASE_ANON_KEY =
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-export const SUPABASE_SQL_SCHEMA = `-- =======================================================
--- MÃ SQL KHỞI TẠO CƠ SỞ DỮ LIỆU GVCN TRÊN SUPABASE
--- Dán đoạn mã này vào mục "SQL Editor" trên Supabase và bấm RUN
--- =======================================================
+export const SUPABASE_SQL_SCHEMA = `-- ====================================================================
+-- MÃ SQL BẢO MẬT VÀ TỐI ƯU CƠ SỞ DỮ LIỆU GVCN TRÊN SUPABASE
+-- Dán đoạn mã này vào mục "SQL Editor" trên Supabase và bấm RUN khi đã cấu hình SUPABASE_SERVICE_ROLE_KEY
+-- ====================================================================
 
--- 1. Tạo bảng lưu trữ toàn diện GVCN (gvcn_store)
-CREATE TABLE IF NOT EXISTS public.gvcn_store (
-  id TEXT PRIMARY KEY,
-  data JSONB NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- 2. Bật Row Level Security (RLS) để bảo vệ dữ liệu
+-- 1. Bật Row Level Security (RLS) để kiểm soát quyền truy cập
 ALTER TABLE public.gvcn_store ENABLE ROW LEVEL SECURITY;
 
--- 3. Tạo chính sách cho phép đọc và ghi đối với ứng dụng GVCN
-CREATE POLICY "Cho phép ứng dụng GVCN đọc dữ liệu"
-ON public.gvcn_store
-FOR SELECT
-USING (true);
+-- 2. GỠ BỎ TẤT CẢ CHÍNH SÁCH CÔNG KHAI CỦA KHÓA ANON
+-- Không cho phép khóa anon bên ngoài đọc hoặc ghi trực tiếp dữ liệu học sinh
+DROP POLICY IF EXISTS "Cho phép ứng dụng GVCN đọc dữ liệu" ON public.gvcn_store;
+DROP POLICY IF EXISTS "Cho phép ứng dụng GVCN cập nhật dữ liệu" ON public.gvcn_store;
+DROP POLICY IF EXISTS "gvcn_store_allow_read" ON public.gvcn_store;
+DROP POLICY IF EXISTS "gvcn_store_restrict_write_to_backend" ON public.gvcn_store;
 
-CREATE POLICY "Cho phép ứng dụng GVCN cập nhật dữ liệu"
+-- 3. CHỈ CẤP QUYỀN TRUY CẬP (ĐỌC & GHI) CHO MÁY CHỦ BACKEND QUA SERVICE_ROLE
+-- Mọi truy cập của giáo viên và học sinh đều phải qua Express API (/api/*)
+-- để được xác thực JWT, phân quyền và lọc bỏ các trường nhạy cảm.
+CREATE POLICY "gvcn_store_backend_only"
 ON public.gvcn_store
 FOR ALL
+TO service_role
 USING (true)
 WITH CHECK (true);
 
--- 4. Tạo chỉ mục JSONB để tăng tốc độ truy vấn
+-- 4. BỔ SUNG CỘT VERSION VÀ CHỈ MỤC TỐI ƯU ĐỒNG BỘ
+ALTER TABLE public.gvcn_store ADD COLUMN IF NOT EXISTS version BIGINT DEFAULT 1 NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_gvcn_store_updated ON public.gvcn_store (updated_at DESC);
 `;

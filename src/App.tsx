@@ -45,6 +45,20 @@ export default function App() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [isForcedInitialPassword, setIsForcedInitialPassword] = useState<boolean>(false);
 
+  // Concurrency conflict notification
+  const [concurrencyConflictMsg, setConcurrencyConflictMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleConflict = (e: any) => {
+      setConcurrencyConflictMsg(
+        e.detail?.message ||
+          'Dữ liệu lớp học đã được cập nhật từ phiên khác. Vui lòng tải lại dữ liệu để đảm bảo không bị ghi đè.'
+      );
+    };
+    window.addEventListener('gvcn-concurrency-conflict', handleConflict);
+    return () => window.removeEventListener('gvcn-concurrency-conflict', handleConflict);
+  }, []);
+
   // Fetch public settings for login screen
   const fetchPublicInfo = useCallback(async () => {
     try {
@@ -227,6 +241,35 @@ export default function App() {
 
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {concurrencyConflictMsg && (
+          <div className="bg-amber-600 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between shadow-md z-50 sticky top-0 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{concurrencyConflictMsg}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setConcurrencyConflictMsg(null);
+                  loadData();
+                }}
+                className="px-3 py-1 bg-white text-amber-900 rounded-lg font-bold hover:bg-amber-50 cursor-pointer shadow-xs transition-colors"
+              >
+                Tải lại dữ liệu ngay
+              </button>
+              <button
+                type="button"
+                onClick={() => setConcurrencyConflictMsg(null)}
+                className="p-1 hover:bg-amber-700 rounded-md cursor-pointer transition-colors"
+                title="Đóng thông báo"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header (Hidden when viewing student detail, as StudentDetailView has its own dedicated top bar) */}
         {!isViewingStudentDetail && (
           <Header

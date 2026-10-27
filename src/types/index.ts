@@ -132,6 +132,9 @@ export interface AppData {
   honors: HonorItem[];
   auditLogs?: AuditLog[];
   currentUserStudent?: Student | null;
+  updated_at?: string;
+  version?: number;
+  revision_token?: string;
 }
 
 export interface AuthState {

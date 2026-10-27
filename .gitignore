@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local database cache & sensitive student records
+data/*.json
+data/*.tmp
+data/gvcn_database.json
+*.tmp

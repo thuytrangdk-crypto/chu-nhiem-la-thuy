@@ -149,6 +149,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           baseDisciplinePoints: Number(baseDisciplinePoints),
           conductThresholds: thresholds,
           teacherPassword: showPasswordInputs && teacherNewPassword ? teacherNewPassword : undefined,
+          clientVersion: data.updated_at,
         },
       });
       await onRefreshData();
