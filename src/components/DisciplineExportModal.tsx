@@ -1,19 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   Award,
   Download,
   Calendar,
-  FileSpreadsheet,
   CheckCircle,
   AlertCircle,
   Clock,
-  GraduationCap,
-  Users,
-  Check
+  Users
 } from 'lucide-react';
-import { AppSettings, DisciplineEvent, Student } from '../types';
+import { AppSettings, DisciplineEvent, Student, SemesterKey } from '../types';
 import { exportDisciplineToExcel, DisciplineExportOptions } from '../utils/excel';
+import {
+  getActiveSemesterPeriod,
+  getAvailableAcademicYears,
+  getSemesterConfigForYear,
+  parseAcademicYears,
+  resolveEventPeriod,
+} from '../utils/scoring';
 
 interface DisciplineExportModalProps {
   isOpen: boolean;
@@ -25,7 +29,6 @@ interface DisciplineExportModalProps {
 
 type PeriodMode = 'week' | 'month' | 'semester' | 'year' | 'custom';
 
-// Helper to format Date to YYYY-MM-DD
 function toDateStr(d: Date): string {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -33,7 +36,6 @@ function toDateStr(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Helper to format Date to DD/MM/YYYY
 function formatVNDate(dStr: string): string {
   if (!dStr) return '';
   const parts = dStr.split('-');
@@ -50,29 +52,45 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
   events,
   settings,
 }) => {
-  // Parse academic year (e.g., "2026 - 2027")
-  const { startYear, endYear } = useMemo(() => {
-    const raw = settings.academicYear || '';
-    const match = raw.match(/(\d{4})\s*-\s*(\d{4})/);
-    if (match) {
-      return { startYear: parseInt(match[1], 10), endYear: parseInt(match[2], 10) };
-    }
-    const current = new Date().getFullYear();
-    return { startYear: current, endYear: current + 1 };
-  }, [settings.academicYear]);
+  const activePeriod = useMemo(() => getActiveSemesterPeriod(settings), [settings]);
+  const availableYears = useMemo(
+    () => getAvailableAcademicYears(settings, events),
+    [settings, events]
+  );
 
-  // Current date reference
   const now = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toDateStr(now), [now]);
 
-  // Default mode
-  const [mode, setMode] = useState<PeriodMode>('month');
+  // Default mode: 'semester' or 'month' (keeping easy selection for HK1 / HK2 / Year)
+  const [mode, setMode] = useState<PeriodMode>('semester');
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(
+    activePeriod.academicYear
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedAcademicYear(activePeriod.academicYear);
+      setSemesterChoice(activePeriod.semester);
+      setExportError(null);
+      setExportSuccess(null);
+    }
+  }, [isOpen, activePeriod.academicYear, activePeriod.semester]);
+
+  const yearConfig = useMemo(
+    () => getSemesterConfigForYear(selectedAcademicYear, settings),
+    [selectedAcademicYear, settings]
+  );
+
+  const { startYear, endYear } = useMemo(
+    () => parseAcademicYears(selectedAcademicYear),
+    [selectedAcademicYear]
+  );
 
   // Week selection
   const [weekChoice, setWeekChoice] = useState<'thisWeek' | 'lastWeek' | 'customWeek'>('thisWeek');
   const [customWeekNum, setCustomWeekNum] = useState<number>(1);
 
-  // Month selection (e.g., '2026-10')
+  // Month selection
   const defaultMonthStr = useMemo(() => {
     const m = String(now.getMonth() + 1).padStart(2, '0');
     return `${now.getFullYear()}-${m}`;
@@ -80,7 +98,7 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonthStr);
 
   // Semester selection
-  const [semesterChoice, setSemesterChoice] = useState<'HK1' | 'HK2'>('HK1');
+  const [semesterChoice, setSemesterChoice] = useState<SemesterKey>(activePeriod.semester);
 
   // Custom date range inputs
   const [customStartDate, setCustomStartDate] = useState<string>(todayStr);
@@ -91,11 +109,10 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
   const [exportSuccess, setExportSuccess] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  // Calculate actual startDate, endDate and periodLabel based on selected mode
   const { startDate, endDate, periodLabel } = useMemo(() => {
     if (mode === 'week') {
       const curr = new Date(now);
-      const day = curr.getDay(); // 0 is Sunday
+      const day = curr.getDay();
       const diffToMonday = curr.getDate() - day + (day === 0 ? -6 : 1);
       const monday = new Date(curr.setDate(diffToMonday));
 
@@ -122,8 +139,8 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
           periodLabel: `Tuần trước (${formatVNDate(sStr)} - ${formatVNDate(eStr)})`,
         };
       } else {
-        // Approximate school week starting from 01/09/startYear
-        const schoolStart = new Date(startYear, 8, 1); // 1st September
+        const [sy, sm, sd] = yearConfig.hk1Start.split('-').map((n) => parseInt(n, 10));
+        const schoolStart = new Date(sy, (sm || 9) - 1, sd || 1);
         const schoolStartMonday = new Date(schoolStart);
         const sDay = schoolStart.getDay();
         const sDiff = schoolStart.getDate() - sDay + (sDay === 0 ? -6 : 1);
@@ -160,35 +177,28 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
 
     if (mode === 'semester') {
       if (semesterChoice === 'HK1') {
-        const sStr = `${startYear}-09-01`;
-        const eStr = `${endYear}-01-15`;
         return {
-          startDate: sStr,
-          endDate: eStr,
-          periodLabel: `Học kỳ 1 (01/09/${startYear} - 15/01/${endYear})`,
+          startDate: yearConfig.hk1Start,
+          endDate: yearConfig.hk1End,
+          periodLabel: `Học kỳ I - Năm học ${yearConfig.academicYear} (${formatVNDate(yearConfig.hk1Start)} - ${formatVNDate(yearConfig.hk1End)})`,
         };
       } else {
-        const sStr = `${endYear}-01-16`;
-        const eStr = `${endYear}-05-31`;
         return {
-          startDate: sStr,
-          endDate: eStr,
-          periodLabel: `Học kỳ 2 (16/01/${endYear} - 31/05/${endYear})`,
+          startDate: yearConfig.hk2Start,
+          endDate: yearConfig.hk2End,
+          periodLabel: `Học kỳ II - Năm học ${yearConfig.academicYear} (${formatVNDate(yearConfig.hk2Start)} - ${formatVNDate(yearConfig.hk2End)})`,
         };
       }
     }
 
     if (mode === 'year') {
-      const sStr = `${startYear}-09-01`;
-      const eStr = `${endYear}-05-31`;
       return {
-        startDate: sStr,
-        endDate: eStr,
-        periodLabel: `Cả năm học ${settings.academicYear} (01/09/${startYear} - 31/05/${endYear})`,
+        startDate: yearConfig.hk1Start,
+        endDate: yearConfig.hk2End,
+        periodLabel: `Cả năm học ${yearConfig.academicYear} (HK I & HK II tách riêng)`,
       };
     }
 
-    // Custom
     return {
       startDate: customStartDate,
       endDate: customEndDate,
@@ -202,44 +212,39 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
     semesterChoice,
     customStartDate,
     customEndDate,
-    startYear,
-    endYear,
-    settings.academicYear,
+    yearConfig,
     now,
   ]);
 
-  // Count events falling into this range
   const eventsInRangeCount = useMemo(() => {
     if (!events) return 0;
     return events.filter((ev) => {
+      if (mode === 'year') {
+        return resolveEventPeriod(ev, settings).academicYear === yearConfig.academicYear;
+      }
+      if (mode === 'semester') {
+        const p = resolveEventPeriod(ev, settings);
+        return p.academicYear === yearConfig.academicYear && p.semester === semesterChoice;
+      }
       const d = (ev.date || '').slice(0, 10);
       return (!startDate || d >= startDate) && (!endDate || d <= endDate);
     }).length;
-  }, [events, startDate, endDate]);
+  }, [events, mode, settings, yearConfig.academicYear, semesterChoice, startDate, endDate]);
 
-  // Current export time formatted in VN
   const currentTimeStr = useMemo(() => {
     const pad = (n: number) => String(n).padStart(2, '0');
-    const day = pad(now.getDate());
-    const month = pad(now.getMonth() + 1);
-    const year = now.getFullYear();
-    const hours = pad(now.getHours());
-    const minutes = pad(now.getMinutes());
-    return `${hours}:${minutes} ${day}/${month}/${year}`;
+    return `${pad(now.getHours())}:${pad(now.getMinutes())} ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
   }, [now]);
 
-  // Handle Export button click
   const handleExport = () => {
     setExportError(null);
     setExportSuccess(null);
 
-    // Validate students exist
     if (!students || students.length === 0) {
       setExportError('Lớp học chưa có dữ liệu học sinh để xuất thi đua.');
       return;
     }
 
-    // Validate dates
     if (!startDate || !endDate) {
       setExportError('Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc.');
       return;
@@ -258,11 +263,20 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
         periodLabel,
         startDate,
         endDate,
+        academicYear: yearConfig.academicYear,
+        semester: mode === 'semester' ? semesterChoice : undefined,
       };
 
       exportDisciplineToExcel(students, events || [], settings, options);
 
-      const fileName = `Thi_dua_${(settings.className || 'Lop').replace(/[\s/\\?%*:|"<>]/g, '_')}_${startDate.split('-').reverse().join('-')}_${endDate.split('-').reverse().join('-')}.xlsx`;
+      const safeClassName = (settings.className || 'Lop').replace(/[\s/\\?%*:|"<>]/g, '_');
+      const suffix =
+        mode === 'year'
+          ? `CaNam_${yearConfig.academicYear.replace(/\s+/g, '')}`
+          : mode === 'semester'
+          ? `${semesterChoice}_${yearConfig.academicYear.replace(/\s+/g, '')}`
+          : `${startDate.split('-').reverse().join('-')}_${endDate.split('-').reverse().join('-')}`;
+      const fileName = `Thi_dua_${safeClassName}_${suffix}.xlsx`;
       setExportSuccess(`Đã xuất thành công file "${fileName}" với đầy đủ 2 sheet: Tổng hợp thi đua & Chi tiết ghi nhận!`);
     } catch (err: any) {
       setExportError(err.message || 'Lỗi khi xuất file Excel thi đua');
@@ -285,7 +299,7 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
             <div>
               <h2 className="text-base font-bold tracking-tight">Xuất Excel Thi Đua Lớp {settings.className}</h2>
               <p className="text-sky-100 text-xs mt-0.5">
-                Báo cáo tổng hợp điểm rèn luyện & chi tiết ghi nhận theo kỳ
+                Báo cáo tổng hợp theo học kỳ (200 điểm/học kỳ) & chi tiết ghi nhận
               </p>
             </div>
           </div>
@@ -324,34 +338,30 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
             </div>
           </div>
 
-          {/* Period Selector Tabs */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              1. Chọn kỳ báo cáo thi đua:
-            </label>
+          {/* Academic year + Period Selector Tabs */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                1. Chọn kỳ báo cáo thi đua:
+              </label>
+
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-500 font-medium">Năm học:</span>
+                <select
+                  value={selectedAcademicYear}
+                  onChange={(e) => setSelectedAcademicYear(e.target.value)}
+                  className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800 cursor-pointer"
+                >
+                  {availableYears.map((yr) => (
+                    <option key={yr} value={yr}>
+                      {yr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-100 p-1.5 rounded-2xl text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setMode('week')}
-                className={`py-2 px-3 rounded-xl transition-all cursor-pointer ${
-                  mode === 'week'
-                    ? 'bg-white text-sky-800 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Theo Tuần
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('month')}
-                className={`py-2 px-3 rounded-xl transition-all cursor-pointer ${
-                  mode === 'month'
-                    ? 'bg-white text-sky-800 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Theo Tháng
-              </button>
               <button
                 type="button"
                 onClick={() => setMode('semester')}
@@ -373,6 +383,28 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
                 }`}
               >
                 Cả Năm Học
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('month')}
+                className={`py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                  mode === 'month'
+                    ? 'bg-white text-sky-800 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Theo Tháng
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('week')}
+                className={`py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                  mode === 'week'
+                    ? 'bg-white text-sky-800 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Theo Tuần
               </button>
               <button
                 type="button"
@@ -450,7 +482,9 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
 
             {mode === 'month' && (
               <div className="space-y-3">
-                <span className="font-bold text-slate-700 block">Chọn tháng trong năm học:</span>
+                <span className="font-bold text-slate-700 block">
+                  Chọn tháng trong năm học {yearConfig.academicYear}:
+                </span>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {[
                     { label: `Tháng 9/${startYear}`, val: `${startYear}-09` },
@@ -483,7 +517,9 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
 
             {mode === 'semester' && (
               <div className="space-y-3">
-                <span className="font-bold text-slate-700 block">Chọn học kỳ:</span>
+                <span className="font-bold text-slate-700 block">
+                  Chọn học kỳ (theo lịch năm học {yearConfig.academicYear}):
+                </span>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -494,9 +530,9 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
                         : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
                     }`}
                   >
-                    <div className="font-bold text-sm">Học kỳ 1</div>
+                    <div className="font-bold text-sm">Học kỳ I</div>
                     <div className="text-[11px] text-slate-500 mt-1">
-                      Từ 01/09/{startYear} đến 15/01/{endYear}
+                      Từ {formatVNDate(yearConfig.hk1Start)} đến {formatVNDate(yearConfig.hk1End)} · 200 điểm đầu kỳ
                     </div>
                   </button>
 
@@ -509,9 +545,9 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
                         : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
                     }`}
                   >
-                    <div className="font-bold text-sm">Học kỳ 2</div>
+                    <div className="font-bold text-sm">Học kỳ II</div>
                     <div className="text-[11px] text-slate-500 mt-1">
-                      Từ 16/01/{endYear} đến 31/05/{endYear}
+                      Từ {formatVNDate(yearConfig.hk2Start)} đến {formatVNDate(yearConfig.hk2End)} · 200 điểm đầu kỳ
                     </div>
                   </button>
                 </div>
@@ -519,11 +555,18 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
             )}
 
             {mode === 'year' && (
-              <div className="p-3 bg-white rounded-xl border border-slate-200 text-slate-700">
-                <p className="font-bold text-sky-900">Toàn bộ năm học {settings.academicYear}</p>
-                <p className="text-slate-500 text-[11px] mt-1">
-                  Khoảng thời gian: Từ 01/09/{startYear} đến 31/05/{endYear} (bao gồm đầy đủ sự việc thi đua trong cả 2 học kỳ).
+              <div className="p-3 bg-white rounded-xl border border-slate-200 text-slate-700 space-y-1.5">
+                <p className="font-bold text-sky-900">
+                  Xuất báo cáo Cả Năm Học {yearConfig.academicYear} (Tách riêng HK I & HK II)
                 </p>
+                <p className="text-slate-600 text-[11px] leading-relaxed">
+                  File Excel sẽ tách riêng các cột <strong>Điểm thi đua HK I</strong>, <strong>Tổng thưởng/trừ HK I</strong>,{' '}
+                  <strong>Hạnh kiểm/Rèn luyện HK I</strong> và <strong>Điểm thi đua HK II</strong>, <strong>Tổng thưởng/trừ HK II</strong>,{' '}
+                  <strong>Hạnh kiểm/Rèn luyện HK II</strong> (mỗi kỳ tính độc lập trên nền 200 điểm, không cộng dồn thành 400).
+                </p>
+                <div className="text-[11px] text-slate-500 pt-1">
+                  HK I: {formatVNDate(yearConfig.hk1Start)} – {formatVNDate(yearConfig.hk1End)} · HK II: {formatVNDate(yearConfig.hk2Start)} – {formatVNDate(yearConfig.hk2End)}
+                </div>
               </div>
             )}
 
@@ -556,12 +599,12 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
 
           {/* Live Preview Box */}
           <div className="bg-gradient-to-br from-indigo-50/70 via-sky-50/70 to-emerald-50/70 border border-sky-200/80 rounded-2xl p-4 text-xs space-y-2.5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="font-bold text-sky-950 flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-sky-600" />
                 Thông tin xuất báo cáo:
               </span>
-              <span className="bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-semibold text-[11px]">
+              <span className="bg-sky-100 text-sky-800 px-2.5 py-0.5 rounded-full font-semibold text-[11px]">
                 {periodLabel}
               </span>
             </div>
@@ -589,7 +632,6 @@ export const DisciplineExportModal: React.FC<DisciplineExportModalProps> = ({
             </div>
           </div>
 
-          {/* Alerts */}
           {exportError && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />

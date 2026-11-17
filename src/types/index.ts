@@ -1,5 +1,15 @@
 export type UserRole = 'teacher' | 'student';
 
+export type SemesterKey = 'HK1' | 'HK2';
+
+export interface SemesterCalendarConfig {
+  academicYear: string; // e.g., '2026 - 2027'
+  hk1Start: string;     // YYYY-MM-DD
+  hk1End: string;       // YYYY-MM-DD
+  hk2Start: string;     // YYYY-MM-DD
+  hk2End: string;       // YYYY-MM-DD
+}
+
 export interface AppSettings {
   appName: string;
   schoolName: string;
@@ -7,6 +17,7 @@ export interface AppSettings {
   teacherName: string;
   academicYear: string;
   baseDisciplinePoints: number;
+  semesterConfigs?: SemesterCalendarConfig[];
   conductThresholds: {
     label: string;
     minScore: number;
@@ -57,12 +68,15 @@ export interface DisciplineEvent {
   id: string;
   studentId: string;
   date: string; // YYYY-MM-DD
+  academicYear?: string;
+  semester?: SemesterKey;
   ruleId: string;
   ruleName: string;
   points: number;
   note?: string;
   linkedAttendanceId?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Subject {

@@ -1,6 +1,15 @@
 import * as XLSX from 'xlsx';
-import { Student, AppSettings, DisciplineEvent } from '../types';
-import { calculateDisciplineScore, evaluateConduct } from './scoring';
+import { Student, AppSettings, DisciplineEvent, SemesterKey } from '../types';
+import {
+  calculateDisciplineScore,
+  calculateFullYearDisciplineSummary,
+  calculateSemesterDisciplineScore,
+  deduplicateDisciplineEvents,
+  evaluateConduct,
+  getSemesterBasePoints,
+  normalizeAcademicYear,
+  resolveEventPeriod,
+} from './scoring';
 
 export interface ParsedStudentRow {
   stt?: number;
@@ -288,6 +297,8 @@ export interface DisciplineExportOptions {
   periodLabel: string;
   startDate: string; // YYYY-MM-DD
   endDate: string;   // YYYY-MM-DD
+  academicYear?: string;
+  semester?: SemesterKey;
 }
 
 function sanitizeExcelText(val: any): string {
@@ -332,209 +343,289 @@ export function exportDisciplineToExcel(
   }
 
   const exportTimeStr = formatDateTimeVN(new Date());
-  const basePoints = typeof settings.baseDisciplinePoints === 'number' ? settings.baseDisciplinePoints : 100;
-
-  // 1. Calculate discipline scores for all students in the class
+  const basePoints = getSemesterBasePoints(settings);
+  const targetYear = normalizeAcademicYear(options.academicYear || settings.academicYear);
   const studentMap = new Map<string, Student>();
   allStudents.forEach((s) => studentMap.set(s.id, s));
 
-  const studentScores = allStudents.map((st) => {
-    const scoreData = calculateDisciplineScore(
-      st.id,
-      events,
-      basePoints,
-      { startDate: options.startDate, endDate: options.endDate }
+  const dedupedEvents = deduplicateDisciplineEvents(events || []);
+  const wb = XLSX.utils.book_new();
+  const teacherRecorderName = settings.teacherName ? `GVCN ${settings.teacherName}` : 'Giáo viên chủ nhiệm';
+
+  if (options.periodType === 'year') {
+    // ==========================================
+    // FULL-YEAR EXPORT: SEPARATE HK1 & HK2 COLUMNS (NEVER SUMMED TO 400)
+    // ==========================================
+    const sortedStudents = [...allStudents].sort((a, b) =>
+      a.studentCode.localeCompare(b.studentCode, undefined, { numeric: true })
     );
-    const conduct = evaluateConduct(scoreData.totalScore, settings.conductThresholds);
-    return {
-      student: st,
-      totalScore: scoreData.totalScore,
-      deltaPoints: scoreData.deltaPoints,
-      positivePoints: scoreData.positivePoints,
-      negativePoints: scoreData.negativePoints, // positive number
-      positiveCount: scoreData.positiveCount,
-      negativeCount: scoreData.negativeCount,
-      conduct: conduct.label,
-    };
-  });
 
-  // Sort by totalScore DESCENDING; secondary sort by fullName Vietnamese locale
-  studentScores.sort((a, b) => {
-    if (b.totalScore !== a.totalScore) {
-      return b.totalScore - a.totalScore;
+    const yearRowsData = sortedStudents.map((st) => {
+      const summary = calculateFullYearDisciplineSummary(st.id, dedupedEvents, targetYear, settings);
+      const hk1Conduct = evaluateConduct(summary.hk1.totalScore, settings.conductThresholds);
+      const hk2Conduct = evaluateConduct(summary.hk2.totalScore, settings.conductThresholds);
+      return {
+        student: st,
+        hk1: summary.hk1,
+        hk1Conduct: hk1Conduct.label,
+        hk2: summary.hk2,
+        hk2Conduct: hk2Conduct.label,
+      };
+    });
+
+    const s1Metadata: any[][] = [
+      ['BẢNG TỔNG HỢP THI ĐUA CẢ NĂM HỌC (TÁCH RIÊNG HỌC KỲ I & HỌC KỲ II)'],
+      ['Trường:', settings.schoolName || 'Chưa cập nhật', '', 'Năm học:', targetYear],
+      ['Lớp:', settings.className || 'Chưa cập nhật', '', 'Giáo viên chủ nhiệm:', settings.teacherName || 'Chưa cập nhật'],
+      ['Kỳ báo cáo:', options.periodLabel, '', 'Thời gian xuất:', exportTimeStr],
+      ['Nguyên tắc tính điểm:', `Mỗi học kỳ cấp riêng ${basePoints} điểm ban đầu (không cộng dồn giữa HK I và HK II)`],
+      [],
+      [
+        'STT',
+        'Mã hồ sơ học sinh',
+        'Họ và tên',
+        'Lớp',
+        'Điểm đầu kỳ HK I',
+        'Tổng điểm thưởng HK I',
+        'Tổng điểm trừ HK I',
+        'Điểm thi đua HK I',
+        'Hạnh kiểm/Rèn luyện HK I',
+        'Điểm đầu kỳ HK II',
+        'Tổng điểm thưởng HK II',
+        'Tổng điểm trừ HK II',
+        'Điểm thi đua HK II',
+        'Hạnh kiểm/Rèn luyện HK II',
+        'Ghi chú',
+      ],
+    ];
+
+    const s1Rows: any[][] = yearRowsData.map((item, idx) => [
+      idx + 1,
+      sanitizeExcelText(item.student.studentCode),
+      sanitizeExcelText(item.student.fullName),
+      sanitizeExcelText(settings.className || ''),
+      basePoints,
+      item.hk1.positivePoints,
+      item.hk1.negativePoints,
+      item.hk1.totalScore,
+      item.hk1Conduct,
+      basePoints,
+      item.hk2.positivePoints,
+      item.hk2.negativePoints,
+      item.hk2.totalScore,
+      item.hk2Conduct,
+      '',
+    ]);
+
+    const ws1 = XLSX.utils.aoa_to_sheet([...s1Metadata, ...s1Rows]);
+    const headerRowIdxS1 = 6;
+    for (let r = 0; r < yearRowsData.length; r++) {
+      const rowNum = headerRowIdxS1 + 1 + r;
+      const item = yearRowsData[r];
+      const setCell = (c: number, t: 'n' | 's', v: number | string) => {
+        ws1[XLSX.utils.encode_cell({ r: rowNum, c })] = { t, v };
+      };
+      setCell(0, 'n', r + 1);
+      setCell(1, 's', String(item.student.studentCode));
+      setCell(2, 's', sanitizeExcelText(item.student.fullName));
+      setCell(3, 's', sanitizeExcelText(settings.className || ''));
+      setCell(4, 'n', basePoints);
+      setCell(5, 'n', item.hk1.positivePoints);
+      setCell(6, 'n', item.hk1.negativePoints);
+      setCell(7, 'n', item.hk1.totalScore);
+      setCell(8, 's', item.hk1Conduct);
+      setCell(9, 'n', basePoints);
+      setCell(10, 'n', item.hk2.positivePoints);
+      setCell(11, 'n', item.hk2.negativePoints);
+      setCell(12, 'n', item.hk2.totalScore);
+      setCell(13, 's', item.hk2Conduct);
+      setCell(14, 's', '');
     }
-    return a.student.fullName.localeCompare(b.student.fullName, 'vi');
-  });
 
-  // Calculate ranking: equal score = same rank (Standard Competition Ranking: 1, 2, 2, 4...)
-  let currentRank = 1;
-  const rankedData = studentScores.map((item, idx) => {
-    if (idx > 0 && item.totalScore === studentScores[idx - 1].totalScore) {
-      return { ...item, rank: currentRank };
-    } else {
+    ws1['!views'] = [{ state: 'frozen', ySplit: 7 }];
+    ws1['!autofilter'] = {
+      ref: XLSX.utils.encode_range({
+        s: { r: headerRowIdxS1, c: 0 },
+        e: { r: headerRowIdxS1 + yearRowsData.length, c: 14 },
+      }),
+    };
+    ws1['!cols'] = [
+      { wch: 6 },
+      { wch: 18 },
+      { wch: 26 },
+      { wch: 10 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 24 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 24 },
+      { wch: 24 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Tổng hợp thi đua');
+  } else {
+    // ==========================================
+    // SINGLE SEMESTER / WEEK / MONTH / CUSTOM EXPORT
+    // ==========================================
+    const studentScores = allStudents.map((st) => {
+      const scoreData =
+        options.periodType === 'semester' && options.semester
+          ? calculateSemesterDisciplineScore(
+              st.id,
+              dedupedEvents,
+              targetYear,
+              options.semester,
+              settings
+            )
+          : calculateDisciplineScore(st.id, dedupedEvents, basePoints, {
+              startDate: options.startDate,
+              endDate: options.endDate,
+            });
+      const conduct = evaluateConduct(scoreData.totalScore, settings.conductThresholds);
+      return {
+        student: st,
+        totalScore: scoreData.totalScore,
+        deltaPoints: scoreData.deltaPoints,
+        positivePoints: scoreData.positivePoints,
+        negativePoints: scoreData.negativePoints,
+        positiveCount: scoreData.positiveCount,
+        negativeCount: scoreData.negativeCount,
+        conduct: conduct.label,
+      };
+    });
+
+    studentScores.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+      return a.student.fullName.localeCompare(b.student.fullName, 'vi');
+    });
+
+    let currentRank = 1;
+    const rankedData = studentScores.map((item, idx) => {
+      if (idx > 0 && item.totalScore === studentScores[idx - 1].totalScore) {
+        return { ...item, rank: currentRank };
+      }
       currentRank = idx + 1;
       return { ...item, rank: currentRank };
+    });
+
+    const s1Metadata: any[][] = [
+      ['BẢNG TỔNG HỢP THI ĐUA HỌC SINH'],
+      ['Trường:', settings.schoolName || 'Chưa cập nhật', '', 'Năm học:', targetYear],
+      ['Lớp:', settings.className || 'Chưa cập nhật', '', 'Giáo viên chủ nhiệm:', settings.teacherName || 'Chưa cập nhật'],
+      ['Kỳ báo cáo:', options.periodLabel, '', 'Thời gian xuất:', exportTimeStr],
+      ['Khoảng thời gian:', `Từ ngày ${formatDateVN(options.startDate)} đến ngày ${formatDateVN(options.endDate)} (trọn ngày, múi giờ Việt Nam)`],
+      [],
+      [
+        'STT',
+        'Mã hồ sơ học sinh',
+        'Họ và tên',
+        'Lớp',
+        'Điểm ban đầu',
+        'Tổng điểm cộng',
+        'Tổng điểm trừ',
+        'Tổng điểm thi đua',
+        'Xếp loại thi đua',
+        'Xếp hạng',
+        'Số lượt ghi nhận tích cực',
+        'Số lượt ghi nhận vi phạm',
+        'Ghi chú',
+      ],
+    ];
+
+    const s1Rows: any[][] = rankedData.map((item, idx) => [
+      idx + 1,
+      sanitizeExcelText(item.student.studentCode),
+      sanitizeExcelText(item.student.fullName),
+      sanitizeExcelText(settings.className || ''),
+      basePoints,
+      item.positivePoints,
+      item.negativePoints,
+      item.totalScore,
+      item.conduct,
+      item.rank,
+      item.positiveCount,
+      item.negativeCount,
+      '',
+    ]);
+
+    const ws1 = XLSX.utils.aoa_to_sheet([...s1Metadata, ...s1Rows]);
+    const headerRowIdxS1 = 6;
+    for (let r = 0; r < rankedData.length; r++) {
+      const rowNum = headerRowIdxS1 + 1 + r;
+      const item = rankedData[r];
+      const setCell = (c: number, t: 'n' | 's', v: number | string) => {
+        ws1[XLSX.utils.encode_cell({ r: rowNum, c })] = { t, v };
+      };
+      setCell(0, 'n', r + 1);
+      setCell(1, 's', String(item.student.studentCode));
+      setCell(2, 's', sanitizeExcelText(item.student.fullName));
+      setCell(3, 's', sanitizeExcelText(settings.className || ''));
+      setCell(4, 'n', basePoints);
+      setCell(5, 'n', item.positivePoints);
+      setCell(6, 'n', item.negativePoints);
+      setCell(7, 'n', item.totalScore);
+      setCell(8, 's', item.conduct);
+      setCell(9, 'n', item.rank);
+      setCell(10, 'n', item.positiveCount);
+      setCell(11, 'n', item.negativeCount);
+      setCell(12, 's', '');
     }
-  });
 
-  // ==========================================
-  // SHEET 1: TỔNG HỢP THI ĐUA
-  // ==========================================
-  const s1Metadata: any[][] = [
-    ['BẢNG TỔNG HỢP THI ĐUA HỌC SINH'],
-    ['Trường:', settings.schoolName || 'Chưa cập nhật', '', 'Năm học:', settings.academicYear || 'Chưa cập nhật'],
-    ['Lớp:', settings.className || 'Chưa cập nhật', '', 'Giáo viên chủ nhiệm:', settings.teacherName || 'Chưa cập nhật'],
-    ['Kỳ báo cáo:', options.periodLabel, '', 'Thời gian xuất:', exportTimeStr],
-    ['Khoảng thời gian:', `Từ ngày ${formatDateVN(options.startDate)} đến ngày ${formatDateVN(options.endDate)} (trọn ngày, múi giờ Việt Nam)`],
-    [], // Blank separator row
-    [
-      'STT',
-      'Mã hồ sơ học sinh',
-      'Họ và tên',
-      'Lớp',
-      'Điểm ban đầu',
-      'Tổng điểm cộng',
-      'Tổng điểm trừ',
-      'Tổng điểm thi đua',
-      'Xếp loại thi đua',
-      'Xếp hạng',
-      'Số lượt ghi nhận tích cực',
-      'Số lượt ghi nhận vi phạm',
-      'Ghi chú',
-    ],
-  ];
-
-  const s1Rows: any[][] = rankedData.map((item, idx) => [
-    idx + 1,
-    sanitizeExcelText(item.student.studentCode),
-    sanitizeExcelText(item.student.fullName),
-    sanitizeExcelText(settings.className || ''),
-    basePoints,
-    item.positivePoints,
-    item.negativePoints,
-    item.totalScore,
-    item.conduct,
-    item.rank,
-    item.positiveCount,
-    item.negativeCount,
-    '',
-  ]);
-
-  const ws1Data = [...s1Metadata, ...s1Rows];
-  const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
-
-  // Format cell types explicitly for Sheet 1
-  const headerRowIdxS1 = 6; // 0-indexed row for table headers (Row 7 in Excel)
-  for (let r = 0; r < rankedData.length; r++) {
-    const rowNum = headerRowIdxS1 + 1 + r;
-    const item = rankedData[r];
-
-    // STT (col A)
-    const cellA = XLSX.utils.encode_cell({ r: rowNum, c: 0 });
-    ws1[cellA] = { t: 'n', v: r + 1 };
-
-    // Mã hồ sơ (col B) -> string to preserve leading zeroes
-    const cellB = XLSX.utils.encode_cell({ r: rowNum, c: 1 });
-    ws1[cellB] = { t: 's', v: String(item.student.studentCode) };
-
-    // Họ tên (col C)
-    const cellC = XLSX.utils.encode_cell({ r: rowNum, c: 2 });
-    ws1[cellC] = { t: 's', v: sanitizeExcelText(item.student.fullName) };
-
-    // Lớp (col D)
-    const cellD = XLSX.utils.encode_cell({ r: rowNum, c: 3 });
-    ws1[cellD] = { t: 's', v: sanitizeExcelText(settings.className || '') };
-
-    // Điểm ban đầu (col E) -> number
-    const cellE = XLSX.utils.encode_cell({ r: rowNum, c: 4 });
-    ws1[cellE] = { t: 'n', v: basePoints };
-
-    // Tổng điểm cộng (col F) -> number
-    const cellF = XLSX.utils.encode_cell({ r: rowNum, c: 5 });
-    ws1[cellF] = { t: 'n', v: item.positivePoints };
-
-    // Tổng điểm trừ (col G) -> number (positive number)
-    const cellG = XLSX.utils.encode_cell({ r: rowNum, c: 6 });
-    ws1[cellG] = { t: 'n', v: item.negativePoints };
-
-    // Tổng điểm thi đua (col H) -> number
-    const cellH = XLSX.utils.encode_cell({ r: rowNum, c: 7 });
-    ws1[cellH] = { t: 'n', v: item.totalScore };
-
-    // Xếp loại thi đua (col I)
-    const cellI = XLSX.utils.encode_cell({ r: rowNum, c: 8 });
-    ws1[cellI] = { t: 's', v: item.conduct };
-
-    // Xếp hạng (col J) -> number
-    const cellJ = XLSX.utils.encode_cell({ r: rowNum, c: 9 });
-    ws1[cellJ] = { t: 'n', v: item.rank };
-
-    // Số lượt tích cực (col K) -> number
-    const cellK = XLSX.utils.encode_cell({ r: rowNum, c: 10 });
-    ws1[cellK] = { t: 'n', v: item.positiveCount };
-
-    // Số lượt vi phạm (col L) -> number
-    const cellL = XLSX.utils.encode_cell({ r: rowNum, c: 11 });
-    ws1[cellL] = { t: 'n', v: item.negativeCount };
-
-    // Ghi chú (col M)
-    const cellM = XLSX.utils.encode_cell({ r: rowNum, c: 12 });
-    ws1[cellM] = { t: 's', v: '' };
+    ws1['!views'] = [{ state: 'frozen', ySplit: 7 }];
+    ws1['!autofilter'] = {
+      ref: XLSX.utils.encode_range({
+        s: { r: headerRowIdxS1, c: 0 },
+        e: { r: headerRowIdxS1 + rankedData.length, c: 12 },
+      }),
+    };
+    ws1['!cols'] = [
+      { wch: 6 },
+      { wch: 18 },
+      { wch: 26 },
+      { wch: 10 },
+      { wch: 14 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 12 },
+      { wch: 24 },
+      { wch: 24 },
+      { wch: 28 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Tổng hợp thi đua');
   }
 
-  // Freeze header row and enable autofilter
-  ws1['!views'] = [{ state: 'frozen', ySplit: 7 }];
-  ws1['!autofilter'] = {
-    ref: XLSX.utils.encode_range({
-      s: { r: headerRowIdxS1, c: 0 },
-      e: { r: headerRowIdxS1 + rankedData.length, c: 12 },
-    }),
-  };
-
-  // Column widths for Sheet 1
-  ws1['!cols'] = [
-    { wch: 6 },  // STT
-    { wch: 18 }, // Mã hồ sơ học sinh
-    { wch: 26 }, // Họ và tên
-    { wch: 10 }, // Lớp
-    { wch: 14 }, // Điểm ban đầu
-    { wch: 16 }, // Tổng điểm cộng
-    { wch: 16 }, // Tổng điểm trừ
-    { wch: 18 }, // Tổng điểm thi đua
-    { wch: 16 }, // Xếp loại thi đua
-    { wch: 12 }, // Xếp hạng
-    { wch: 24 }, // Số lượt ghi nhận tích cực
-    { wch: 24 }, // Số lượt ghi nhận vi phạm
-    { wch: 28 }, // Ghi chú
-  ];
-
   // ==========================================
-  // SHEET 2: CHI TIẾT GHI NHẬN
+  // SHEET 2: CHI TIẾT GHI NHẬN (WITH ACADEMIC YEAR & SEMESTER)
   // ==========================================
-  // Filter events within date range belonging to students in this class
   const classStudentIds = new Set(allStudents.map((s) => s.id));
-  const seenEventIds = new Set<string>();
   const filteredEvents: DisciplineEvent[] = [];
 
-  for (const ev of events) {
+  for (const ev of dedupedEvents) {
     if (!classStudentIds.has(ev.studentId)) continue;
-    if (ev.id) {
-      if (seenEventIds.has(ev.id)) continue;
-      seenEventIds.add(ev.id);
+    const period = resolveEventPeriod(ev, settings);
+
+    if (options.periodType === 'year') {
+      if (period.academicYear !== targetYear) continue;
+    } else if (options.periodType === 'semester' && options.semester) {
+      if (period.academicYear !== targetYear || period.semester !== options.semester) continue;
+    } else {
+      const evDate = (ev.date || '').slice(0, 10);
+      if (!evDate) continue;
+      if (options.startDate && evDate < options.startDate) continue;
+      if (options.endDate && evDate > options.endDate) continue;
     }
-
-    const evDate = (ev.date || '').slice(0, 10);
-    if (!evDate) continue;
-
-    if (options.startDate && evDate < options.startDate) continue;
-    if (options.endDate && evDate > options.endDate) continue;
 
     filteredEvents.push(ev);
   }
 
-  // Sort events chronologically (date ascending, studentCode ascending)
   filteredEvents.sort((a, b) => {
-    const dComp = a.date.localeCompare(b.date);
+    const dComp = (a.date || '').localeCompare(b.date || '');
     if (dComp !== 0) return dComp;
     const stA = studentMap.get(a.studentId)?.studentCode || '';
     const stB = studentMap.get(b.studentId)?.studentCode || '';
@@ -543,14 +634,16 @@ export function exportDisciplineToExcel(
 
   const s2Metadata: any[][] = [
     ['BẢNG CHI TIẾT GHI NHẬN THI ĐUA HỌC SINH'],
-    ['Trường:', settings.schoolName || 'Chưa cập nhật', '', 'Năm học:', settings.academicYear || 'Chưa cập nhật'],
+    ['Trường:', settings.schoolName || 'Chưa cập nhật', '', 'Năm học:', targetYear],
     ['Lớp:', settings.className || 'Chưa cập nhật', '', 'Giáo viên chủ nhiệm:', settings.teacherName || 'Chưa cập nhật'],
     ['Kỳ báo cáo:', options.periodLabel, '', 'Thời gian xuất:', exportTimeStr],
     ['Khoảng thời gian:', `Từ ngày ${formatDateVN(options.startDate)} đến ngày ${formatDateVN(options.endDate)} (trọn ngày, múi giờ Việt Nam)`],
-    [], // Blank separator row
+    [],
     [
       'STT',
       'Thời gian',
+      'Năm học',
+      'Học kỳ',
       'Mã hồ sơ học sinh',
       'Họ và tên',
       'Nội dung sự việc',
@@ -561,10 +654,9 @@ export function exportDisciplineToExcel(
     ],
   ];
 
-  const teacherRecorderName = settings.teacherName ? `GVCN ${settings.teacherName}` : 'Giáo viên chủ nhiệm';
-
   const s2Rows: any[][] = filteredEvents.map((ev, idx) => {
     const student = studentMap.get(ev.studentId);
+    const period = resolveEventPeriod(ev, settings);
     const pts = typeof ev.points === 'number' ? ev.points : Number(ev.points) || 0;
     const pointsFormatted = pts > 0 ? `+${pts}` : pts === 0 ? '0' : `${pts}`;
     const eventType = pts > 0 ? 'Tích cực' : pts < 0 ? 'Vi phạm' : 'Ghi nhận';
@@ -572,6 +664,8 @@ export function exportDisciplineToExcel(
     return [
       idx + 1,
       formatDateVN(ev.date),
+      period.academicYear,
+      period.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II',
       sanitizeExcelText(student?.studentCode || 'N/A'),
       sanitizeExcelText(student?.fullName || 'N/A'),
       sanitizeExcelText(ev.ruleName || 'Ghi nhận thi đua'),
@@ -582,14 +676,15 @@ export function exportDisciplineToExcel(
     ];
   });
 
-  // If no events in the selected period, add an informative notice row
   if (s2Rows.length === 0) {
     s2Rows.push([
       1,
       '-',
+      targetYear,
+      options.semester === 'HK2' ? 'Học kỳ II' : options.semester === 'HK1' ? 'Học kỳ I' : 'Cả năm',
       '-',
       '-',
-      'Không có sự việc thi đua nào phát sinh trong khoảng thời gian đã chọn',
+      'Không có sự việc thi đua nào phát sinh trong kỳ đã chọn',
       '-',
       '-',
       teacherRecorderName,
@@ -597,85 +692,49 @@ export function exportDisciplineToExcel(
     ]);
   }
 
-  const ws2Data = [...s2Metadata, ...s2Rows];
-  const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
-
+  const ws2 = XLSX.utils.aoa_to_sheet([...s2Metadata, ...s2Rows]);
   const headerRowIdxS2 = 6;
   for (let r = 0; r < s2Rows.length; r++) {
     const rowNum = headerRowIdxS2 + 1 + r;
     const rowItem = s2Rows[r];
-
-    // STT (col A)
-    const cellA = XLSX.utils.encode_cell({ r: rowNum, c: 0 });
-    ws2[cellA] = { t: 'n', v: r + 1 };
-
-    // Thời gian (col B)
-    const cellB = XLSX.utils.encode_cell({ r: rowNum, c: 1 });
-    ws2[cellB] = { t: 's', v: String(rowItem[1]) };
-
-    // Mã HS (col C)
-    const cellC = XLSX.utils.encode_cell({ r: rowNum, c: 2 });
-    ws2[cellC] = { t: 's', v: String(rowItem[2]) };
-
-    // Họ tên (col D)
-    const cellD = XLSX.utils.encode_cell({ r: rowNum, c: 3 });
-    ws2[cellD] = { t: 's', v: String(rowItem[3]) };
-
-    // Nội dung (col E)
-    const cellE = XLSX.utils.encode_cell({ r: rowNum, c: 4 });
-    ws2[cellE] = { t: 's', v: String(rowItem[4]) };
-
-    // Loại ghi nhận (col F)
-    const cellF = XLSX.utils.encode_cell({ r: rowNum, c: 5 });
-    ws2[cellF] = { t: 's', v: String(rowItem[5]) };
-
-    // Điểm cộng/trừ có dấu (col G)
-    const cellG = XLSX.utils.encode_cell({ r: rowNum, c: 6 });
-    ws2[cellG] = { t: 's', v: String(rowItem[6]) };
-
-    // Người ghi nhận (col H)
-    const cellH = XLSX.utils.encode_cell({ r: rowNum, c: 7 });
-    ws2[cellH] = { t: 's', v: String(rowItem[7]) };
-
-    // Ghi chú (col I)
-    const cellI = XLSX.utils.encode_cell({ r: rowNum, c: 8 });
-    ws2[cellI] = { t: 's', v: String(rowItem[8]) };
+    ws2[XLSX.utils.encode_cell({ r: rowNum, c: 0 })] = { t: 'n', v: r + 1 };
+    for (let c = 1; c <= 10; c++) {
+      ws2[XLSX.utils.encode_cell({ r: rowNum, c })] = { t: 's', v: String(rowItem[c] ?? '') };
+    }
   }
 
-  // Freeze header row and enable autofilter
   ws2['!views'] = [{ state: 'frozen', ySplit: 7 }];
   ws2['!autofilter'] = {
     ref: XLSX.utils.encode_range({
       s: { r: headerRowIdxS2, c: 0 },
-      e: { r: headerRowIdxS2 + s2Rows.length, c: 8 },
+      e: { r: headerRowIdxS2 + s2Rows.length, c: 10 },
     }),
   };
-
-  // Column widths for Sheet 2
   ws2['!cols'] = [
-    { wch: 6 },  // STT
-    { wch: 14 }, // Thời gian
-    { wch: 18 }, // Mã hồ sơ học sinh
-    { wch: 26 }, // Họ và tên
-    { wch: 34 }, // Nội dung sự việc
-    { wch: 16 }, // Loại ghi nhận
-    { wch: 16 }, // Điểm cộng/trừ
-    { wch: 24 }, // Người ghi nhận
-    { wch: 32 }, // Ghi chú
+    { wch: 6 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 26 },
+    { wch: 34 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 24 },
+    { wch: 32 },
   ];
-
-  // ==========================================
-  // ASSEMBLE WORKBOOK & DOWNLOAD
-  // ==========================================
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws1, 'Tổng hợp thi đua');
   XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiết ghi nhận');
 
-  // Filename format: Thi_dua_[TenLop]_[TuNgay]_[DenNgay].xlsx
   const fromDateFormatted = options.startDate.split('-').reverse().join('-');
   const toDateFormatted = options.endDate.split('-').reverse().join('-');
   const safeClassName = (settings.className || 'Lop').replace(/[\s/\\?%*:|"<>]/g, '_');
-  const filename = `Thi_dua_${safeClassName}_${fromDateFormatted}_${toDateFormatted}.xlsx`;
+  const suffix =
+    options.periodType === 'year'
+      ? `CaNam_${targetYear.replace(/\s+/g, '')}`
+      : options.periodType === 'semester' && options.semester
+      ? `${options.semester}_${targetYear.replace(/\s+/g, '')}`
+      : `${fromDateFormatted}_${toDateFormatted}`;
+  const filename = `Thi_dua_${safeClassName}_${suffix}.xlsx`;
 
   XLSX.writeFile(wb, filename);
 }
@@ -686,31 +745,64 @@ export function exportStudentViolationsExcel(
   allEvents: DisciplineEvent[],
   settings: AppSettings,
   periodLabel: string,
-  selectedMonth?: string
+  filter?: string | { academicYear?: string; semester?: 'HK1' | 'HK2' | 'YEAR'; month?: string }
 ) {
   const exportTimeStr = formatDateTimeVN(new Date());
+  const deduped = deduplicateDisciplineEvents(allEvents || []).filter(
+    (ev) => ev.studentId === student.id
+  );
 
-  // Filter events for this student
-  let studentEvents = allEvents.filter((ev) => ev.studentId === student.id);
+  let studentEvents = deduped;
+  let summaryLine = '';
 
-  if (selectedMonth && selectedMonth !== 'all') {
-    studentEvents = studentEvents.filter((ev) => (ev.date || '').startsWith(selectedMonth));
+  if (typeof filter === 'string') {
+    if (filter && filter !== 'all') {
+      studentEvents = deduped.filter((ev) => (ev.date || '').startsWith(filter));
+    }
+  } else if (filter && typeof filter === 'object') {
+    const targetYear = normalizeAcademicYear(filter.academicYear || settings.academicYear);
+    if (filter.semester === 'YEAR') {
+      const fullSummary = calculateFullYearDisciplineSummary(
+        student.id,
+        deduped,
+        targetYear,
+        settings
+      );
+      const hk1C = evaluateConduct(fullSummary.hk1.totalScore, settings.conductThresholds);
+      const hk2C = evaluateConduct(fullSummary.hk2.totalScore, settings.conductThresholds);
+      studentEvents = fullSummary.combinedEvents;
+      summaryLine = `HK I: ${fullSummary.hk1.totalScore}/200 (Thưởng +${fullSummary.hk1.positivePoints}, Trừ -${fullSummary.hk1.negativePoints}, ${hk1C.label})  |  HK II: ${fullSummary.hk2.totalScore}/200 (Thưởng +${fullSummary.hk2.positivePoints}, Trừ -${fullSummary.hk2.negativePoints}, ${hk2C.label})`;
+    } else if (filter.semester === 'HK1' || filter.semester === 'HK2') {
+      const semSummary = calculateSemesterDisciplineScore(
+        student.id,
+        deduped,
+        targetYear,
+        filter.semester,
+        settings,
+        filter.month
+      );
+      const semC = evaluateConduct(semSummary.totalScore, settings.conductThresholds);
+      studentEvents = semSummary.filteredEvents;
+      summaryLine = `${filter.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'} (${targetYear}): ${semSummary.totalScore}/200 (Điểm nền: 200, Thưởng: +${semSummary.positivePoints}, Trừ: -${semSummary.negativePoints}, Rèn luyện: ${semC.label})`;
+    }
   }
 
-  // Sort chronologically descending (newest first)
-  studentEvents.sort((a, b) => b.date.localeCompare(a.date));
+  studentEvents = [...studentEvents].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   const teacherRecorderName = settings.teacherName ? `GVCN ${settings.teacherName}` : 'Giáo viên chủ nhiệm';
 
   const metadata: any[][] = [
-    [`DANH SÁCH VI PHẠM & GHI NHẬN THI ĐUA`],
+    ['DANH SÁCH VI PHẠM & GHI NHẬN THI ĐUA'],
     [`Học sinh: ${student.fullName}`, '', `Mã học sinh: ${student.studentCode}`, '', `Giới tính: ${student.gender} - Ngày sinh: ${student.dob}`],
     [`Lớp: ${settings.className || '9A2'}`, '', `Trường: ${settings.schoolName || ''}`, '', `GVCN: ${settings.teacherName || ''}`],
     [`Kỳ báo cáo: ${periodLabel}`, '', `Thời gian xuất file: ${exportTimeStr}`],
+    summaryLine ? [`Tổng hợp điểm: ${summaryLine}`] : [],
     [],
     [
       'STT',
       'Ngày xảy ra',
+      'Năm học',
+      'Học kỳ',
       'Quy tắc / Sự việc',
       'Loại ghi nhận',
       'Điểm cộng/trừ',
@@ -720,6 +812,7 @@ export function exportStudentViolationsExcel(
   ];
 
   const rows: any[][] = studentEvents.map((ev, idx) => {
+    const period = resolveEventPeriod(ev, settings);
     const pts = typeof ev.points === 'number' ? ev.points : Number(ev.points) || 0;
     const pointsFormatted = pts > 0 ? `+${pts}` : pts === 0 ? '0' : `${pts}`;
     const eventType = pts > 0 ? 'Khen thưởng / Tích cực' : pts < 0 ? 'Vi phạm kỷ luật' : 'Ghi nhận';
@@ -727,6 +820,8 @@ export function exportStudentViolationsExcel(
     return [
       idx + 1,
       formatDateVN(ev.date),
+      period.academicYear,
+      period.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II',
       sanitizeExcelText(ev.ruleName || 'Ghi nhận thi đua'),
       eventType,
       pointsFormatted,
@@ -736,7 +831,7 @@ export function exportStudentViolationsExcel(
   });
 
   if (rows.length === 0) {
-    rows.push([1, '-', 'Không có sự việc vi phạm hay khen thưởng nào trong kỳ này', '-', '-', '', teacherRecorderName]);
+    rows.push([1, '-', '-', '-', 'Không có sự việc vi phạm hay khen thưởng nào trong kỳ này', '-', '-', '', teacherRecorderName]);
   }
 
   const wsData = [...metadata, ...rows];
@@ -745,6 +840,8 @@ export function exportStudentViolationsExcel(
   ws['!cols'] = [
     { wch: 6 },
     { wch: 14 },
+    { wch: 14 },
+    { wch: 12 },
     { wch: 34 },
     { wch: 22 },
     { wch: 16 },
@@ -761,4 +858,5 @@ export function exportStudentViolationsExcel(
 
   XLSX.writeFile(wb, filename);
 }
+
 

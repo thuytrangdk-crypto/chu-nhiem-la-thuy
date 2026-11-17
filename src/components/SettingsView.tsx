@@ -18,11 +18,18 @@ import {
   Cloud,
   Copy,
   ExternalLink,
-  Check
+  Check,
+  Calendar
 } from 'lucide-react';
-import { AppData, DisciplineRule, Subject } from '../types';
+import { AppData, DisciplineRule, Subject, SemesterCalendarConfig } from '../types';
 import { apiRequest } from '../utils/api';
 import { SUPABASE_SQL_SCHEMA } from '../utils/supabase';
+import {
+  getSemesterConfigs,
+  buildDefaultSemesterConfig,
+  normalizeAcademicYear,
+  getSemesterBasePoints,
+} from '../utils/scoring';
 
 interface SettingsViewProps {
   data: AppData;
@@ -43,7 +50,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [className, setClassName] = useState(data.settings.className);
   const [teacherName, setTeacherName] = useState(data.settings.teacherName);
   const [academicYear, setAcademicYear] = useState(data.settings.academicYear);
-  const [baseDisciplinePoints, setBaseDisciplinePoints] = useState(data.settings.baseDisciplinePoints);
+  const [baseDisciplinePoints, setBaseDisciplinePoints] = useState(() =>
+    getSemesterBasePoints(data.settings)
+  );
+  const [semesterConfigs, setSemesterConfigs] = useState<SemesterCalendarConfig[]>(() =>
+    getSemesterConfigs(data.settings)
+  );
+  const [newAcademicYearInput, setNewAcademicYearInput] = useState('');
   const [isSavingGeneral, setIsSavingGeneral] = useState(false);
   const [generalMessage, setGeneralMessage] = useState<string | null>(null);
 
@@ -61,6 +74,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       { label: 'Chưa đạt', minScore: 0 },
     ];
   });
+
+  useEffect(() => {
+    setAppName(data.settings.appName);
+    setSchoolName(data.settings.schoolName);
+    setClassName(data.settings.className);
+    setTeacherName(data.settings.teacherName);
+    setAcademicYear(data.settings.academicYear);
+    setBaseDisciplinePoints(getSemesterBasePoints(data.settings));
+    setSemesterConfigs(getSemesterConfigs(data.settings));
+    if (data.settings.conductThresholds) {
+      setThresholds(data.settings.conductThresholds);
+    }
+  }, [data.settings]);
 
   // --- TAB 2: DISCIPLINE RULES STATE ---
   const [isAddingRule, setIsAddingRule] = useState(false);
@@ -118,11 +144,83 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setTimeout(() => setCopiedSql(false), 2500);
   };
 
+  // ---------------- HANDLER: SEMESTER CALENDAR HELPERS ----------------
+  const handleUpdateSemesterConfigField = (
+    targetYear: string,
+    field: 'hk1Start' | 'hk1End' | 'hk2Start' | 'hk2End',
+    value: string
+  ) => {
+    setSemesterConfigs((prev) =>
+      prev.map((cfg) => (cfg.academicYear === targetYear ? { ...cfg, [field]: value } : cfg))
+    );
+  };
+
+  const handleAddAcademicYearCalendar = () => {
+    const raw = newAcademicYearInput.trim();
+    const norm = raw
+      ? normalizeAcademicYear(raw)
+      : (() => {
+          const latest = semesterConfigs[semesterConfigs.length - 1];
+          const match = latest?.academicYear.match(/(\d{4})\s*-\s*(\d{4})/);
+          const sy = match ? parseInt(match[2], 10) : new Date().getFullYear() + 1;
+          return `${sy} - ${sy + 1}`;
+        })();
+
+    if (semesterConfigs.some((c) => c.academicYear === norm)) {
+      alert(`Năm học "${norm}" đã có trong danh sách cấu hình.`);
+      return;
+    }
+
+    setSemesterConfigs((prev) =>
+      [...prev, buildDefaultSemesterConfig(norm)].sort((a, b) =>
+        a.academicYear.localeCompare(b.academicYear)
+      )
+    );
+    setNewAcademicYearInput('');
+  };
+
+  const handleRemoveAcademicYearCalendar = (targetYear: string) => {
+    const activeNorm = normalizeAcademicYear(academicYear);
+    if (targetYear === activeNorm) {
+      alert('Không thể xóa cấu hình của năm học đang được áp dụng.');
+      return;
+    }
+    setSemesterConfigs((prev) => prev.filter((c) => c.academicYear !== targetYear));
+  };
+
   // ---------------- HANDLER: SAVE GENERAL SETTINGS ----------------
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingGeneral(true);
     setGeneralMessage(null);
+
+    const activeNorm = normalizeAcademicYear(academicYear);
+    const configsToSave = semesterConfigs.some((c) => c.academicYear === activeNorm)
+      ? semesterConfigs
+      : [...semesterConfigs, buildDefaultSemesterConfig(activeNorm)];
+
+    for (const cfg of configsToSave) {
+      if (!cfg.hk1Start || !cfg.hk1End || !cfg.hk2Start || !cfg.hk2End) {
+        alert(`Năm học ${cfg.academicYear}: Vui lòng nhập đầy đủ ngày bắt đầu và kết thúc cho HK I và HK II.`);
+        setIsSavingGeneral(false);
+        return;
+      }
+      if (cfg.hk1Start > cfg.hk1End) {
+        alert(`Năm học ${cfg.academicYear}: Ngày bắt đầu Học kỳ I không được sau ngày kết thúc Học kỳ I.`);
+        setIsSavingGeneral(false);
+        return;
+      }
+      if (cfg.hk2Start > cfg.hk2End) {
+        alert(`Năm học ${cfg.academicYear}: Ngày bắt đầu Học kỳ II không được sau ngày kết thúc Học kỳ II.`);
+        setIsSavingGeneral(false);
+        return;
+      }
+      if (cfg.hk1End >= cfg.hk2Start) {
+        alert(`Năm học ${cfg.academicYear}: Ngày bắt đầu Học kỳ II phải sau ngày kết thúc Học kỳ I.`);
+        setIsSavingGeneral(false);
+        return;
+      }
+    }
 
     if (showPasswordInputs && teacherNewPassword) {
       if (teacherNewPassword.length < 6) {
@@ -145,8 +243,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           schoolName,
           className,
           teacherName,
-          academicYear,
-          baseDisciplinePoints: Number(baseDisciplinePoints),
+          academicYear: activeNorm,
+          baseDisciplinePoints: Number(baseDisciplinePoints) || 200,
+          semesterConfigs: configsToSave,
           conductThresholds: thresholds,
           teacherPassword: showPasswordInputs && teacherNewPassword ? teacherNewPassword : undefined,
           clientVersion: data.updated_at,
@@ -157,9 +256,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         setTeacherNewPassword('');
         setTeacherConfirmPassword('');
         setShowPasswordInputs(false);
-        setGeneralMessage('Đã lưu cài đặt và cập nhật mật khẩu GVCN thành công!');
+        setGeneralMessage('Đã lưu cài đặt, cấu hình học kỳ và cập nhật mật khẩu GVCN thành công!');
       } else {
-        setGeneralMessage('Đã lưu các thay đổi cài đặt chung thành công!');
+        setGeneralMessage('Đã lưu các thay đổi cài đặt chung và thời gian học kỳ thành công!');
       }
       setTimeout(() => setGeneralMessage(null), 3500);
     } catch (err: any) {
@@ -483,28 +582,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             {/* Thi đua base points & thresholds */}
             <div className="pt-4 border-t border-slate-100 space-y-4">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Cấu Hình Thi Đua & Xếp Loại Rèn Luyện
+                Cấu Hình Thi Đua & Xếp Loại Rèn Luyện Theo Học Kỳ
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Điểm nền mỗi kỳ đánh giá
+                    Điểm thi đua ban đầu mỗi học kỳ
                   </label>
                   <input
                     type="number"
+                    min={1}
                     value={baseDisciplinePoints}
                     onChange={(e) => setBaseDisciplinePoints(Number(e.target.value))}
                     className="w-full px-3 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Tổng điểm = Điểm nền + tổng điểm cộng/trừ trong kỳ
+                    Mặc định <strong>200 điểm / học kỳ</strong>. Điểm HK I và HK II tính độc lập: 200 + Thưởng − Trừ.
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Ngưỡng xếp loại rèn luyện
+                    Ngưỡng xếp loại rèn luyện (áp dụng riêng cho từng học kỳ)
                   </label>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     {thresholds.map((th, idx) => (
@@ -526,6 +626,140 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Cấu hình thời gian Học kỳ I & Học kỳ II theo từng năm học */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-sky-600" />
+                    Thời Gian Học Kỳ Theo Từng Năm Học
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Hệ thống tự động chuyển sang Học kỳ II (khởi tạo mới 200/200 điểm) và phân loại sự việc theo khoảng ngày bên dưới.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="VD: 2027 - 2028"
+                    value={newAcademicYearInput}
+                    onChange={(e) => setNewAcademicYearInput(e.target.value)}
+                    className="w-32 px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddAcademicYearCalendar}
+                    className="px-2.5 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Thêm năm học
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {semesterConfigs.map((cfg) => {
+                  const isCurrentYear = cfg.academicYear === normalizeAcademicYear(academicYear);
+                  return (
+                    <div
+                      key={cfg.academicYear}
+                      className={`p-3.5 rounded-xl border ${
+                        isCurrentYear
+                          ? 'bg-sky-50/60 border-sky-200'
+                          : 'bg-slate-50/70 border-slate-200/80'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-800">
+                            Năm học {cfg.academicYear}
+                          </span>
+                          {isCurrentYear && (
+                            <span className="text-[10px] font-bold text-sky-700 bg-white px-2 py-0.5 rounded-md border border-sky-200">
+                              Đang áp dụng
+                            </span>
+                          )}
+                        </div>
+                        {!isCurrentYear && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAcademicYearCalendar(cfg.academicYear)}
+                            className="p-1 text-rose-500 hover:bg-rose-50 rounded-md cursor-pointer"
+                            title="Xóa cấu hình năm học này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 space-y-1.5">
+                          <span className="text-[11px] font-bold text-sky-800 block">
+                            Học kỳ I (Bắt đầu 200 điểm)
+                          </span>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-0.5">Từ ngày</label>
+                              <input
+                                type="date"
+                                value={cfg.hk1Start}
+                                onChange={(e) =>
+                                  handleUpdateSemesterConfigField(cfg.academicYear, 'hk1Start', e.target.value)
+                                }
+                                className="w-full px-2 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-md"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-0.5">Đến ngày</label>
+                              <input
+                                type="date"
+                                value={cfg.hk1End}
+                                onChange={(e) =>
+                                  handleUpdateSemesterConfigField(cfg.academicYear, 'hk1End', e.target.value)
+                                }
+                                className="w-full px-2 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-md"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 space-y-1.5">
+                          <span className="text-[11px] font-bold text-indigo-800 block">
+                            Học kỳ II (Khởi tạo lại 200 điểm)
+                          </span>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-0.5">Từ ngày</label>
+                              <input
+                                type="date"
+                                value={cfg.hk2Start}
+                                onChange={(e) =>
+                                  handleUpdateSemesterConfigField(cfg.academicYear, 'hk2Start', e.target.value)
+                                }
+                                className="w-full px-2 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-md"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-0.5">Đến ngày</label>
+                              <input
+                                type="date"
+                                value={cfg.hk2End}
+                                onChange={(e) =>
+                                  handleUpdateSemesterConfigField(cfg.academicYear, 'hk2End', e.target.value)
+                                }
+                                className="w-full px-2 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-md"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </form>

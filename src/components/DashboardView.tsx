@@ -14,8 +14,17 @@ import {
   XCircle,
   FileText
 } from 'lucide-react';
-import { AppData, UserRole } from '../types';
-import { calculateDisciplineScore, evaluateConduct } from '../utils/scoring';
+import { AppData, SemesterKey, UserRole } from '../types';
+import {
+  calculateSemesterDisciplineScore,
+  deduplicateDisciplineEvents,
+  evaluateConduct,
+  getActiveSemesterPeriod,
+  getAvailableAcademicYears,
+  getSemesterConfigForYear,
+  resolveEventPeriod,
+  toLocalDateString,
+} from '../utils/scoring';
 import { formatAnnouncementAuthor } from './BoardAndSeatingView';
 
 interface DashboardViewProps {
@@ -31,12 +40,44 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateToStudent,
   onNavigateToBoard,
 }) => {
-  const currentMonthNum = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  const defaultMonthStr = `${currentYear}-${String(currentMonthNum).padStart(2, '0')}`;
+  const activePeriod = useMemo(() => getActiveSemesterPeriod(data.settings), [data.settings]);
+  const availableYears = useMemo(
+    () => getAvailableAcademicYears(data.settings, data.disciplineEvents),
+    [data.settings, data.disciplineEvents]
+  );
 
-  const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonthStr);
-  const todayStr = new Date().toISOString().split('T')[0];
+  const [selectedYear, setSelectedYear] = useState<string>(() => activePeriod.academicYear);
+  const [selectedSemester, setSelectedSemester] = useState<SemesterKey>(() => activePeriod.semester);
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const todayStr = useMemo(() => toLocalDateString(), []);
+
+  // Months overlapping the configured date range for the selected academic year & semester
+  const semesterMonths = useMemo(() => {
+    const cfg = getSemesterConfigForYear(selectedYear, data.settings);
+    const start = selectedSemester === 'HK1' ? cfg.hk1Start : cfg.hk2Start;
+    const end = selectedSemester === 'HK1' ? cfg.hk1End : cfg.hk2End;
+    const months: { value: string; label: string }[] = [];
+    const sMatch = start.match(/^(\d{4})-(\d{2})/);
+    const eMatch = end.match(/^(\d{4})-(\d{2})/);
+    if (sMatch && eMatch) {
+      let y = parseInt(sMatch[1], 10);
+      let m = parseInt(sMatch[2], 10);
+      const endY = parseInt(eMatch[1], 10);
+      const endM = parseInt(eMatch[2], 10);
+      let guard = 0;
+      while ((y < endY || (y === endY && m <= endM)) && guard < 18) {
+        const val = `${y}-${String(m).padStart(2, '0')}`;
+        months.push({ value: val, label: `Tháng ${m}/${y}` });
+        m++;
+        if (m > 12) {
+          m = 1;
+          y++;
+        }
+        guard++;
+      }
+    }
+    return months;
+  }, [selectedYear, selectedSemester, data.settings]);
 
   // 1. Overall student stats
   const totalStudents = data.students.length;
@@ -51,16 +92,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const lateToday = todayAttendance.filter((a) => a.status === 'late').length;
   const absentToday = excusedToday + unexcusedToday;
 
-  // 3. Discipline events in selected month
-  const monthEvents = useMemo(() => {
-    return data.disciplineEvents.filter((e) => {
-      if (selectedMonth === 'all') return true;
-      return e.date.startsWith(selectedMonth);
-    });
-  }, [data.disciplineEvents, selectedMonth]);
+  // 3. Discipline events in selected semester (and optional month)
+  const dedupedEvents = useMemo(
+    () => deduplicateDisciplineEvents(data.disciplineEvents),
+    [data.disciplineEvents]
+  );
 
-  const infractionsCount = monthEvents.filter((e) => e.points < 0).length;
-  const positivesCount = monthEvents.filter((e) => e.points > 0).length;
+  const periodEvents = useMemo(() => {
+    return dedupedEvents.filter((e) => {
+      const period = resolveEventPeriod(e, data.settings);
+      if (period.academicYear !== selectedYear || period.semester !== selectedSemester) {
+        return false;
+      }
+      if (selectedMonth !== 'all' && !(e.date || '').startsWith(selectedMonth)) {
+        return false;
+      }
+      return true;
+    });
+  }, [dedupedEvents, data.settings, selectedYear, selectedSemester, selectedMonth]);
+
+  const infractionsCount = periodEvents.filter((e) => e.points < 0).length;
+  const positivesCount = periodEvents.filter((e) => e.points > 0).length;
 
   // 4. Discipline group breakdown
   const groupStats = useMemo(() => {
@@ -72,7 +124,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       'Khác': { positive: 0, negative: 0, points: 0 },
     };
 
-    monthEvents.forEach((ev) => {
+    periodEvents.forEach((ev) => {
       const rule = data.disciplineRules.find((r) => r.id === ev.ruleId);
       const groupName = rule?.group || 'Khác';
       if (!map[groupName]) map[groupName] = { positive: 0, negative: 0, points: 0 };
@@ -83,16 +135,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     });
 
     return map;
-  }, [monthEvents, data.disciplineRules]);
+  }, [periodEvents, data.disciplineRules]);
 
-  // 5. Outstanding students (Top scores)
+  // 5. Outstanding students (Top scores in selected semester, 200 initial points)
   const outstandingStudents = useMemo(() => {
     return data.students
       .map((st) => {
-        const scoreData = calculateDisciplineScore(
+        const scoreData = calculateSemesterDisciplineScore(
           st.id,
-          data.disciplineEvents,
-          data.settings.baseDisciplinePoints,
+          dedupedEvents,
+          selectedYear,
+          selectedSemester,
+          data.settings,
           selectedMonth
         );
         return {
@@ -103,13 +157,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       })
       .sort((a, b) => b.totalScore - a.totalScore)
       .slice(0, 5);
-  }, [data.students, data.disciplineEvents, data.settings, selectedMonth]);
+  }, [data.students, dedupedEvents, data.settings, selectedYear, selectedSemester, selectedMonth]);
 
   // 6. Recent announcements
   const latestAnnouncements = data.announcements.slice(0, 3);
 
   // 7. Recent discipline events
-  const recentEvents = data.disciplineEvents.slice(0, 6);
+  const recentEvents = useMemo(
+    () =>
+      [...periodEvents]
+        .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''))
+        .slice(0, 6),
+    [periodEvents]
+  );
+
+  const semesterLabel = selectedSemester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II';
 
   return (
     <div className="space-y-6">
@@ -120,30 +182,57 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             Bảng Điều Khiển Lớp {data.settings.className}
           </h1>
           <p className="text-xs text-slate-500">
-            Dữ liệu tổng hợp thi đua, điểm danh và hoạt động học tập
+            Thi đua độc lập theo học kỳ (200 điểm/học kỳ) · Đang áp dụng:{' '}
+            <span className="font-semibold text-sky-700">
+              {activePeriod.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'} ({activePeriod.academicYear})
+            </span>
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
             <Calendar className="w-4 h-4 text-sky-600" />
             <span>Kỳ đánh giá:</span>
           </div>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => {
+              setSelectedYear(e.target.value);
+              setSelectedMonth('all');
+            }}
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+          >
+            {availableYears.map((y) => (
+              <option key={y} value={y}>
+                Năm học {y}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedSemester}
+            onChange={(e) => {
+              setSelectedSemester(e.target.value as SemesterKey);
+              setSelectedMonth('all');
+            }}
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+          >
+            <option value="HK1">Học kỳ I (200đ)</option>
+            <option value="HK2">Học kỳ II (200đ)</option>
+          </select>
+
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
           >
-            <option value="all">Tất cả các tháng (Cả năm)</option>
-            {Array.from({ length: 12 }, (_, i) => {
-              const m = i + 1;
-              const val = `${currentYear}-${String(m).padStart(2, '0')}`;
-              return (
-                <option key={m} value={val}>
-                  Tháng {m}/{currentYear}
-                </option>
-              );
-            })}
+            <option value="all">Toàn {semesterLabel}</option>
+            {semesterMonths.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -261,7 +350,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h3 className="text-sm font-bold text-slate-800">Tình Hình Thi Đua Theo Nhóm</h3>
             </div>
             <span className="text-xs text-slate-500">
-              {selectedMonth === 'all' ? 'Cả năm' : `Tháng ${selectedMonth.split('-')[1]}`}
+              {selectedMonth === 'all'
+                ? `${selectedSemester === 'HK1' ? 'HK I' : 'HK II'} · ${selectedYear}`
+                : `Tháng ${selectedMonth.split('-')[1]}/${selectedMonth.split('-')[0]}`}
             </span>
           </div>
 
@@ -415,10 +506,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                 <div className="text-right">
                   <div className="text-sm font-bold text-sky-800 font-mono tabular-nums">
-                    {item.totalScore} đ
+                    {item.totalScore}/{item.basePoints} đ
                   </div>
-                  <div className="text-[10px] text-emerald-700">
-                    +{item.deltaPoints >= 0 ? item.deltaPoints : 0} điểm
+                  <div className="text-[10px] text-slate-500 font-mono">
+                    <span className="text-emerald-700">+{item.positivePoints}</span>
+                    {' / '}
+                    <span className="text-rose-600">-{item.negativePoints}</span>
                   </div>
                 </div>
               </div>

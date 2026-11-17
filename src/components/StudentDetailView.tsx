@@ -28,9 +28,20 @@ import {
   AlertTriangle,
   Contact2
 } from 'lucide-react';
-import { AppData, Student, UserRole, Grade } from '../types';
+import { AppData, Student, UserRole, Grade, DisciplineEvent, SemesterKey } from '../types';
 import { apiRequest } from '../utils/api';
-import { calculateDisciplineScore, evaluateConduct, calculateAttendanceStats } from '../utils/scoring';
+import {
+  calculateSemesterDisciplineScore,
+  calculateFullYearDisciplineSummary,
+  evaluateConduct,
+  calculateAttendanceStats,
+  getActiveSemesterPeriod,
+  getAvailableAcademicYears,
+  getSemesterConfigForYear,
+  resolveDateToSemester,
+  resolveEventPeriod,
+  toLocalDateString,
+} from '../utils/scoring';
 import { downloadGradeTemplate, exportStudentViolationsExcel } from '../utils/excel';
 
 interface StudentDetailViewProps {
@@ -52,20 +63,29 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
   onRefreshData,
   onEditStudentInfo,
 }) => {
-  const currentMonthNum = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  const defaultMonth = `${currentYear}-${String(currentMonthNum).padStart(2, '0')}`;
+  const activePeriod = useMemo(() => getActiveSemesterPeriod(data.settings), [data.settings]);
+  const availableAcademicYears = useMemo(
+    () => getAvailableAcademicYears(data.settings, data.disciplineEvents),
+    [data.settings, data.disciplineEvents]
+  );
 
   const [activeTab, setActiveTab] = useState<DetailTab>('discipline');
+  const [disciplineYear, setDisciplineYear] = useState<string>(activePeriod.academicYear);
+  const [disciplineSemesterFilter, setDisciplineSemesterFilter] = useState<'HK1' | 'HK2' | 'YEAR'>(
+    activePeriod.semester
+  );
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
-  const [selectedSemester, setSelectedSemester] = useState<'HK1' | 'HK2'>('HK1');
+  const [selectedSemester, setSelectedSemester] = useState<'HK1' | 'HK2'>(activePeriod.semester);
 
-  // --- TAB THI ĐUA GHI NHẬN SỰ VIỆC STATE ---
-  const todayDateStr = new Date().toISOString().split('T')[0];
+  // --- TAB THI ĐUA GHI NHẬN / CHỈNH SỬA SỰ VIỆC STATE ---
+  const todayDateStr = useMemo(() => toLocalDateString(), []);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [incidentDate, setIncidentDate] = useState(todayDateStr);
   const [selectedRuleId, setSelectedRuleId] = useState<string>(data.disciplineRules[0]?.id || '');
   const [incidentNote, setIncidentNote] = useState('');
   const [ruleSearch, setRuleSearch] = useState('');
+  const [overrideYear, setOverrideYear] = useState<string>(activePeriod.academicYear);
+  const [overrideSemester, setOverrideSemester] = useState<SemesterKey>(activePeriod.semester);
   const [isSubmittingDiscipline, setIsSubmittingDiscipline] = useState(false);
   const [disciplineMessage, setDisciplineMessage] = useState<string | null>(null);
 
@@ -148,33 +168,112 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
     return map;
   }, [data.subjects]);
 
-  // Discipline score calculation using 9A2 settings (base score e.g. 100)
-  const disciplineStats = useMemo(() => {
-    return calculateDisciplineScore(
+  // Active semester discipline stats (for top summary box & handbook - 200 pts/semester)
+  const activeSemesterStats = useMemo(() => {
+    return calculateSemesterDisciplineScore(
       student.id,
       data.disciplineEvents,
-      data.settings.baseDisciplinePoints,
+      activePeriod.academicYear,
+      activePeriod.semester,
+      data.settings
+    );
+  }, [
+    student.id,
+    data.disciplineEvents,
+    activePeriod.academicYear,
+    activePeriod.semester,
+    data.settings,
+  ]);
+
+  const activeSemesterConduct = useMemo(() => {
+    return evaluateConduct(activeSemesterStats.totalScore, data.settings.conductThresholds);
+  }, [activeSemesterStats.totalScore, data.settings.conductThresholds]);
+
+  // Selected year calendar config & filtered semester/full-year stats for Tab 4
+  const selectedYearConfig = useMemo(
+    () => getSemesterConfigForYear(disciplineYear, data.settings),
+    [disciplineYear, data.settings]
+  );
+
+  const filteredSemesterStats = useMemo(() => {
+    if (disciplineSemesterFilter === 'YEAR') {
+      return null;
+    }
+    return calculateSemesterDisciplineScore(
+      student.id,
+      data.disciplineEvents,
+      disciplineYear,
+      disciplineSemesterFilter,
+      data.settings,
       selectedMonth
     );
-  }, [student.id, data.disciplineEvents, data.settings.baseDisciplinePoints, selectedMonth]);
+  }, [
+    student.id,
+    data.disciplineEvents,
+    disciplineYear,
+    disciplineSemesterFilter,
+    data.settings,
+    selectedMonth,
+  ]);
 
-  const conductEval = useMemo(() => {
-    return evaluateConduct(disciplineStats.totalScore, data.settings.conductThresholds);
-  }, [disciplineStats.totalScore, data.settings.conductThresholds]);
+  const filteredConductEval = useMemo(() => {
+    if (!filteredSemesterStats) return null;
+    return evaluateConduct(filteredSemesterStats.totalScore, data.settings.conductThresholds);
+  }, [filteredSemesterStats, data.settings.conductThresholds]);
 
-  // Overall discipline stats (all time) for top stat box
-  const overallDisciplineStats = useMemo(() => {
-    return calculateDisciplineScore(
+  const fullYearSummary = useMemo(() => {
+    return calculateFullYearDisciplineSummary(
       student.id,
       data.disciplineEvents,
-      data.settings.baseDisciplinePoints,
-      'all'
+      disciplineYear,
+      data.settings
     );
-  }, [student.id, data.disciplineEvents, data.settings.baseDisciplinePoints]);
+  }, [student.id, data.disciplineEvents, disciplineYear, data.settings]);
 
-  const overallConductEval = useMemo(() => {
-    return evaluateConduct(overallDisciplineStats.totalScore, data.settings.conductThresholds);
-  }, [overallDisciplineStats.totalScore, data.settings.conductThresholds]);
+  const fullYearHk1Conduct = useMemo(
+    () => evaluateConduct(fullYearSummary.hk1.totalScore, data.settings.conductThresholds),
+    [fullYearSummary.hk1.totalScore, data.settings.conductThresholds]
+  );
+  const fullYearHk2Conduct = useMemo(
+    () => evaluateConduct(fullYearSummary.hk2.totalScore, data.settings.conductThresholds),
+    [fullYearSummary.hk2.totalScore, data.settings.conductThresholds]
+  );
+
+  // Months list for selected semester (optional sub-filter)
+  const semesterMonthsOptions = useMemo(() => {
+    if (disciplineSemesterFilter === 'YEAR') return [];
+    const startStr =
+      disciplineSemesterFilter === 'HK1'
+        ? selectedYearConfig.hk1Start
+        : selectedYearConfig.hk2Start;
+    const endStr =
+      disciplineSemesterFilter === 'HK1'
+        ? selectedYearConfig.hk1End
+        : selectedYearConfig.hk2End;
+    const [sy, sm] = startStr.split('-').map((n) => parseInt(n, 10));
+    const [ey, em] = endStr.split('-').map((n) => parseInt(n, 10));
+    if (!sy || !sm || !ey || !em) return [];
+    const list: { val: string; label: string }[] = [];
+    let y = sy;
+    let m = sm;
+    while (y < ey || (y === ey && m <= em)) {
+      const val = `${y}-${String(m).padStart(2, '0')}`;
+      list.push({ val, label: `Tháng ${m}/${y}` });
+      m++;
+      if (m > 12) {
+        m = 1;
+        y++;
+      }
+      if (list.length > 12) break;
+    }
+    return list;
+  }, [disciplineSemesterFilter, selectedYearConfig]);
+
+  // Preview auto-resolved academicYear & semester for incidentDate
+  const incidentPeriodPreview = useMemo(
+    () => resolveDateToSemester(incidentDate, data.settings),
+    [incidentDate, data.settings]
+  );
 
   // Attendance statistics (overall for top card)
   const overallAttendanceStats = useMemo(() => {
@@ -214,14 +313,57 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
     return data.disciplineRules.find((r) => r.id === selectedRuleId);
   }, [data.disciplineRules, selectedRuleId]);
 
-  // Label for selected month/period
-  const selectedPeriodLabel = useMemo(() => {
-    if (selectedMonth === 'all') return 'Tất cả thời gian';
-    const [y, m] = selectedMonth.split('-');
-    return `Tháng ${parseInt(m, 10)}/${y}`;
-  }, [selectedMonth]);
+  const formatDateVNShort = (dStr?: string) => {
+    if (!dStr) return '';
+    const parts = dStr.slice(0, 10).split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return dStr;
+  };
 
-  // ---------------- HANDLER: RECORD DISCIPLINE EVENT ----------------
+  // Label for selected period in Tab 4
+  const selectedPeriodLabel = useMemo(() => {
+    if (disciplineSemesterFilter === 'YEAR') {
+      return `Cả năm học ${disciplineYear}`;
+    }
+    const semName = disciplineSemesterFilter === 'HK1' ? 'Học kỳ I' : 'Học kỳ II';
+    if (selectedMonth !== 'all') {
+      const [y, m] = selectedMonth.split('-');
+      return `${semName} (${disciplineYear}) - Tháng ${parseInt(m, 10)}/${y}`;
+    }
+    return `${semName} (${disciplineYear})`;
+  }, [disciplineSemesterFilter, disciplineYear, selectedMonth]);
+
+  // History rows to display in Tab 4
+  const displayedDisciplineEvents = useMemo(() => {
+    if (disciplineSemesterFilter === 'YEAR') {
+      return fullYearSummary.combinedEvents;
+    }
+    return (filteredSemesterStats?.filteredEvents || []).map((ev) => ({
+      ...ev,
+      resolvedSemester: disciplineSemesterFilter as SemesterKey,
+    }));
+  }, [disciplineSemesterFilter, fullYearSummary.combinedEvents, filteredSemesterStats]);
+
+  // ---------------- HANDLER: START / CANCEL EDIT DISCIPLINE EVENT ----------------
+  const handleStartEditDisciplineEvent = (ev: DisciplineEvent) => {
+    const resolved = resolveEventPeriod(ev, data.settings);
+    setEditingEventId(ev.id);
+    setIncidentDate((ev.date || '').slice(0, 10) || todayDateStr);
+    setSelectedRuleId(ev.ruleId);
+    setIncidentNote(ev.note || '');
+    setOverrideYear(resolved.academicYear);
+    setOverrideSemester(resolved.semester);
+    setDisciplineMessage(null);
+  };
+
+  const handleCancelEditDisciplineEvent = () => {
+    setEditingEventId(null);
+    setIncidentDate(todayDateStr);
+    setIncidentNote('');
+    setDisciplineMessage(null);
+  };
+
+  // ---------------- HANDLER: RECORD / UPDATE DISCIPLINE EVENT ----------------
   const handleSaveDisciplineEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRuleId) return;
@@ -230,27 +372,46 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
     setDisciplineMessage(null);
 
     try {
+      const payload: any = {
+        id: editingEventId || undefined,
+        studentId: student.id,
+        date: incidentDate,
+        ruleId: selectedRuleId,
+        note: incidentNote,
+      };
+
+      if (!incidentPeriodPreview.isWithinConfiguredRange) {
+        payload.academicYear = overrideYear;
+        payload.semester = overrideSemester;
+      }
+
       const res = await apiRequest('/api/discipline/event', {
         method: 'POST',
-        body: {
-          studentId: student.id,
-          date: incidentDate,
-          ruleId: selectedRuleId,
-          note: incidentNote,
-        },
+        body: payload,
       });
 
+      const targetSem = !incidentPeriodPreview.isWithinConfiguredRange
+        ? overrideSemester
+        : incidentPeriodPreview.semester;
+      const targetYr = !incidentPeriodPreview.isWithinConfiguredRange
+        ? overrideYear
+        : incidentPeriodPreview.academicYear;
+
       setDisciplineMessage(
-        res.attendanceSynced
-          ? 'Đã lưu thi đua & tự động cập nhật điểm danh thành công!'
-          : 'Đã lưu ghi nhận thi đua thành công!'
+        editingEventId
+          ? `Đã cập nhật sự việc (${targetSem === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'} · ${targetYr}) và tính lại điểm thành công!`
+          : res.attendanceSynced
+          ? `Đã lưu thi đua (${targetSem === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'}) & cập nhật điểm danh thành công!`
+          : `Đã lưu ghi nhận thi đua (${targetSem === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'} · ${targetYr}) thành công!`
       );
+
+      setEditingEventId(null);
       setIncidentNote('');
       await onRefreshData();
 
-      setTimeout(() => setDisciplineMessage(null), 3000);
+      setTimeout(() => setDisciplineMessage(null), 3500);
     } catch (err: any) {
-      alert(err.message || 'Lỗi khi ghi nhận thi đua');
+      alert(err.message || 'Lỗi khi lưu sự việc thi đua');
     } finally {
       setIsSubmittingDiscipline(false);
     }
@@ -260,7 +421,7 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
   const handleDeleteDisciplineEvent = async (id: string, name: string) => {
     if (
       !confirm(
-        `Bạn có chắc muốn xóa bản ghi "${name}"? Tổng điểm và điểm danh liên kết sẽ được tự động tính lại.`
+        `Bạn có chắc muốn xóa bản ghi "${name}"? Tổng điểm của học kỳ tương ứng và điểm danh liên kết sẽ được tự động tính lại.`
       )
     ) {
       return;
@@ -268,6 +429,9 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
 
     try {
       await apiRequest(`/api/discipline/event/${id}`, { method: 'DELETE' });
+      if (editingEventId === id) {
+        handleCancelEditDisciplineEvent();
+      }
       await onRefreshData();
     } catch (err: any) {
       alert(err.message || 'Lỗi khi xóa bản ghi thi đua');
@@ -281,7 +445,11 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
       data.disciplineEvents,
       data.settings,
       selectedPeriodLabel,
-      selectedMonth
+      {
+        academicYear: disciplineYear,
+        semester: disciplineSemesterFilter,
+        month: selectedMonth,
+      }
     );
   };
 
@@ -471,41 +639,42 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
             </div>
           </div>
 
-          {/* Stat 3: Điểm thi đua còn lại (9A2 base score) */}
+          {/* Stat 3: Điểm thi đua còn lại (Chỉ hiển thị học kỳ đang áp dụng - thang 200) */}
           <div className="bg-sky-50/60 rounded-xl border border-sky-100 p-3.5 text-center flex flex-col justify-between">
             <span className="text-[11px] font-bold text-sky-900 uppercase tracking-wide">
               Điểm Thi Đua Còn Lại
             </span>
             <div className="my-1.5">
               <div className="text-2xl font-black font-mono text-sky-800">
-                {overallDisciplineStats.totalScore}
+                {activeSemesterStats.totalScore}
+                <span className="text-sm font-bold text-sky-600/80">/200</span>
               </div>
-              <div className="text-[11px] text-slate-500 mt-0.5">
-                Điểm nền: {data.settings.baseDisciplinePoints} (Biến động: {overallDisciplineStats.deltaPoints >= 0 ? `+${overallDisciplineStats.deltaPoints}` : overallDisciplineStats.deltaPoints})
+              <div className="text-[11px] text-slate-600 mt-0.5 font-medium">
+                {activePeriod.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'} ({activePeriod.academicYear})
               </div>
             </div>
-            <div className="text-[10px] text-slate-500 bg-white/80 py-0.5 rounded border border-sky-100">
-              {overallDisciplineStats.positiveCount} cộng / {overallDisciplineStats.negativeCount} trừ
+            <div className="text-[10px] text-slate-600 bg-white/80 py-0.5 px-2 rounded border border-sky-100">
+              Thưởng +{activeSemesterStats.positivePoints} · Trừ -{activeSemesterStats.negativePoints}
             </div>
           </div>
 
-          {/* Stat 4: Kết quả rèn luyện */}
+          {/* Stat 4: Kết quả rèn luyện (Theo học kỳ đang áp dụng) */}
           <div className="bg-slate-50/80 rounded-xl border border-slate-200/80 p-3.5 text-center flex flex-col justify-between">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
               Kết Quả Rèn Luyện
             </span>
             <div className="my-1.5">
               <span
-                className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${overallConductEval.colorClass}`}
+                className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${activeSemesterConduct.colorClass}`}
               >
-                {overallConductEval.label}
+                {activeSemesterConduct.label}
               </span>
               <div className="text-[11px] text-slate-500 mt-1">
-                Theo quy chế thi đua 9A2
+                Theo {activePeriod.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'} · Lớp {data.settings.className}
               </div>
             </div>
             <div className="text-[10px] text-slate-500 bg-slate-100 py-0.5 rounded">
-              Đánh giá tự động
+              Đánh giá độc lập theo kỳ
             </div>
           </div>
         </div>
@@ -946,14 +1115,25 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
       {/* ================= TAB 4: THI ĐUA & KỶ LUẬT (2-COLUMN 1/3 & 2/3 LAYOUT) ================= */}
       {activeTab === 'discipline' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* CỘT TRÁI (~1/3 CHIỀU RỘNG): GHI NHẬN SỰ VIỆC THI ĐUA */}
+          {/* CỘT TRÁI (~1/3 CHIỀU RỘNG): GHI NHẬN / CHỈNH SỬA SỰ VIỆC THI ĐUA */}
           <div className={`${role === 'teacher' ? 'lg:col-span-4' : 'hidden'} space-y-4`}>
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col overflow-hidden">
-              <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-                <Award className="w-4 h-4 text-sky-600" />
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                  Ghi Nhận Sự Việc
-                </h3>
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-2 bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-sky-600" />
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                    {editingEventId ? 'Chỉnh Sửa Sự Việc' : 'Ghi Nhận Sự Việc'}
+                  </h3>
+                </div>
+                {editingEventId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditDisciplineEvent}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 bg-slate-200/70 hover:bg-slate-200 px-2 py-0.5 rounded-md cursor-pointer"
+                  >
+                    Hủy sửa
+                  </button>
+                )}
               </div>
 
               {disciplineMessage && (
@@ -965,7 +1145,7 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
 
               <form onSubmit={handleSaveDisciplineEvent} className="p-4 flex flex-col flex-1">
                 {/* Scrollable inputs container */}
-                <div className="space-y-3.5 overflow-y-auto max-h-[440px] pr-1">
+                <div className="space-y-3.5 overflow-y-auto max-h-[500px] pr-1">
                   {/* 1. Ngày xảy ra */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -974,10 +1154,59 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
                     <input
                       type="date"
                       value={incidentDate}
-                      onChange={(e) => setIncidentDate(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setIncidentDate(val);
+                        const res = resolveDateToSemester(val, data.settings);
+                        setOverrideYear(res.academicYear);
+                        setOverrideSemester(res.semester);
+                      }}
                       className="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-500"
                       required
                     />
+
+                    {/* Auto-detected Academic Year & Semester badge */}
+                    <div className="mt-1.5 flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded-lg bg-sky-50/70 border border-sky-100 text-sky-900">
+                      <span className="text-slate-600">Tự động xếp kỳ:</span>
+                      <span className="font-bold">
+                        {incidentPeriodPreview.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'} · {incidentPeriodPreview.academicYear}
+                      </span>
+                    </div>
+
+                    {/* Out-of-range Warning */}
+                    {!incidentPeriodPreview.isWithinConfiguredRange && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200/90 text-[11px] text-amber-900 space-y-2">
+                        <div className="flex items-start gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>Cảnh báo:</strong> Ngày{' '}
+                            <span className="font-mono font-bold">{formatDateVNShort(incidentDate)}</span>{' '}
+                            nằm ngoài khoảng thời gian học kỳ đã cấu hình. Vui lòng kiểm tra lại ngày hoặc chọn kỳ áp dụng bên dưới:
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 pt-1">
+                          <select
+                            value={overrideYear}
+                            onChange={(e) => setOverrideYear(e.target.value)}
+                            className="px-2 py-1 text-[11px] bg-white border border-amber-300 rounded-lg font-semibold text-slate-800"
+                          >
+                            {availableAcademicYears.map((yr) => (
+                              <option key={yr} value={yr}>
+                                {yr}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={overrideSemester}
+                            onChange={(e) => setOverrideSemester(e.target.value as SemesterKey)}
+                            className="px-2 py-1 text-[11px] bg-white border border-amber-300 rounded-lg font-semibold text-slate-800"
+                          >
+                            <option value="HK1">Học kỳ I</option>
+                            <option value="HK2">Học kỳ II</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 2. Quy tắc thi đua with search & list */}
@@ -1059,49 +1288,100 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
                   </div>
                 </div>
 
-                {/* 5. Sticky Save Button (Always visible at bottom of box) */}
+                {/* 5. Sticky Save Button */}
                 <div className="sticky bottom-0 bg-white pt-4 mt-2 border-t border-slate-100 z-10">
                   <button
                     type="submit"
                     disabled={isSubmittingDiscipline || !selectedRuleId}
-                    className="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-sky-600/20 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                    className={`w-full py-2.5 px-4 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
+                      editingEventId
+                        ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
+                        : 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/20'
+                    }`}
                   >
                     <Save className="w-4 h-4" />
-                    {isSubmittingDiscipline ? 'Đang lưu...' : 'LƯU GHI NHẬN'}
+                    {isSubmittingDiscipline
+                      ? 'Đang lưu...'
+                      : editingEventId
+                      ? 'CẬP NHẬT SỰ VIỆC'
+                      : 'LƯU GHI NHẬN'}
                   </button>
                 </div>
               </form>
             </div>
           </div>
 
-          {/* CỘT PHẢI (~2/3 CHIỀU RỘNG): TỔNG HỢP & LỊCH SỬ GHI NHẬN */}
+          {/* CỘT PHẢI (~2/3 CHIỀU RỘNG): TỔNG HỢP & LỊCH SỬ GHI NHẬN THEO NĂM HỌC / HỌC KỲ */}
           <div
             className={`${
               role === 'teacher' ? 'lg:col-span-8' : 'lg:col-span-12'
             } space-y-4`}
           >
-            {/* THANH TỔNG HỢP GỌN PHÍA TRÊN */}
+            {/* THANH BỘ LỌC NĂM HỌC, HỌC KỲ & TỔNG HỢP */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
-                {/* Bộ lọc thời gian */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-700">Kỳ đánh giá:</span>
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">Tất cả thời gian</option>
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const m = i + 1;
-                      const val = `${currentYear}-${String(m).padStart(2, '0')}`;
-                      return (
-                        <option key={m} value={val}>
-                          Tháng {m}/{currentYear}
+                {/* Bộ lọc Năm học + Học kỳ + Tháng */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-700">Năm học:</span>
+                    <select
+                      value={disciplineYear}
+                      onChange={(e) => {
+                        setDisciplineYear(e.target.value);
+                        setSelectedMonth('all');
+                      }}
+                      className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
+                    >
+                      {availableAcademicYears.map((yr) => (
+                        <option key={yr} value={yr}>
+                          {yr}
                         </option>
-                      );
-                    })}
-                  </select>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Học kỳ I / Học kỳ II / Cả năm */}
+                  <div className="flex bg-slate-100 p-0.5 rounded-xl text-xs border border-slate-200/60">
+                    {(
+                      [
+                        { key: 'HK1', label: 'Học kỳ I' },
+                        { key: 'HK2', label: 'Học kỳ II' },
+                        { key: 'YEAR', label: 'Cả năm' },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => {
+                          setDisciplineSemesterFilter(opt.key);
+                          setSelectedMonth('all');
+                        }}
+                        className={`px-2.5 py-1 font-semibold rounded-lg transition-colors cursor-pointer ${
+                          disciplineSemesterFilter === opt.key
+                            ? 'bg-white text-sky-800 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Lọc theo tháng trong học kỳ */}
+                  {disciplineSemesterFilter !== 'YEAR' && semesterMonthsOptions.length > 0 && (
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">Cả học kỳ</option>
+                      {semesterMonthsOptions.map((m) => (
+                        <option key={m.val} value={m.val}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Nút Xuất Excel vi phạm theo từng học sinh */}
@@ -1116,51 +1396,153 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
                 </button>
               </div>
 
-              {/* Các thẻ chỉ số tổng hợp gọn theo kỳ */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
-                <div className="p-2.5 rounded-xl bg-sky-50/70 border border-sky-100">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">
-                    Điểm thi đua còn lại
-                  </span>
-                  <div className="text-xl font-black font-mono text-sky-800 mt-0.5">
-                    {disciplineStats.totalScore}
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">
-                    Tổng điểm thưởng
-                  </span>
-                  <div className="text-xl font-black font-mono text-emerald-700 mt-0.5">
-                    +{disciplineStats.positivePoints}
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-rose-50/70 border border-rose-100">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">
-                    Tổng điểm trừ
-                  </span>
-                  <div className="text-xl font-black font-mono text-rose-700 mt-0.5">
-                    -{disciplineStats.negativePoints}
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">
-                    Kết quả rèn luyện
-                  </span>
-                  <div className="mt-0.5">
-                    <span
-                      className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-bold ${conductEval.colorClass}`}
-                    >
-                      {conductEval.label}
+              {/* CHẾ ĐỘ XEM 1 HỌC KỲ (HK I hoặc HK II) */}
+              {disciplineSemesterFilter !== 'YEAR' && filteredSemesterStats && filteredConductEval && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <span>
+                      Khoảng thời gian áp dụng:{' '}
+                      <strong className="text-slate-700 font-mono">
+                        {disciplineSemesterFilter === 'HK1'
+                          ? `${formatDateVNShort(selectedYearConfig.hk1Start)} – ${formatDateVNShort(selectedYearConfig.hk1End)}`
+                          : `${formatDateVNShort(selectedYearConfig.hk2Start)} – ${formatDateVNShort(selectedYearConfig.hk2End)}`}
+                      </strong>
                     </span>
+                    <span>Điểm ban đầu học kỳ: <strong className="text-slate-700">{filteredSemesterStats.basePoints}</strong></span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+                    <div className="p-2.5 rounded-xl bg-sky-50/70 border border-sky-100">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        Điểm thi đua còn lại
+                      </span>
+                      <div className="text-xl font-black font-mono text-sky-800 mt-0.5">
+                        {filteredSemesterStats.totalScore}
+                        <span className="text-xs font-bold text-sky-600/80">/200</span>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        Tổng điểm thưởng
+                      </span>
+                      <div className="text-xl font-black font-mono text-emerald-700 mt-0.5">
+                        +{filteredSemesterStats.positivePoints}
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-rose-50/70 border border-rose-100">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        Tổng điểm trừ
+                      </span>
+                      <div className="text-xl font-black font-mono text-rose-700 mt-0.5">
+                        -{filteredSemesterStats.negativePoints}
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col justify-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        Kết quả rèn luyện
+                      </span>
+                      <div className="mt-0.5">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-bold ${filteredConductEval.colorClass}`}
+                        >
+                          {filteredConductEval.label}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* CHẾ ĐỘ XEM CẢ NĂM: HIỂN THỊ TÁCH BẠCH HỌC KỲ I VÀ HỌC KỲ II (KHÔNG CỘNG 400) */}
+              {disciplineSemesterFilter === 'YEAR' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Card Học kỳ I */}
+                  <div className="p-3.5 rounded-xl bg-sky-50/60 border border-sky-200/80 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-extrabold text-sky-900 uppercase">
+                          Học kỳ I ({disciplineYear})
+                        </span>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          {formatDateVNShort(selectedYearConfig.hk1Start)} – {formatDateVNShort(selectedYearConfig.hk1End)}
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${fullYearHk1Conduct.colorClass}`}
+                      >
+                        {fullYearHk1Conduct.label}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-white rounded-lg p-2 border border-sky-100">
+                        <div className="text-[10px] text-slate-500 font-semibold">Điểm HK I</div>
+                        <div className="text-base font-black font-mono text-sky-800">
+                          {fullYearSummary.hk1.totalScore}/200
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-2 border border-emerald-100">
+                        <div className="text-[10px] text-slate-500 font-semibold">Thưởng</div>
+                        <div className="text-base font-black font-mono text-emerald-700">
+                          +{fullYearSummary.hk1.positivePoints}
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-2 border border-rose-100">
+                        <div className="text-[10px] text-slate-500 font-semibold">Điểm trừ</div>
+                        <div className="text-base font-black font-mono text-rose-700">
+                          -{fullYearSummary.hk1.negativePoints}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Học kỳ II */}
+                  <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-200/80 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-extrabold text-indigo-900 uppercase">
+                          Học kỳ II ({disciplineYear})
+                        </span>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          {formatDateVNShort(selectedYearConfig.hk2Start)} – {formatDateVNShort(selectedYearConfig.hk2End)}
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${fullYearHk2Conduct.colorClass}`}
+                      >
+                        {fullYearHk2Conduct.label}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-white rounded-lg p-2 border border-indigo-100">
+                        <div className="text-[10px] text-slate-500 font-semibold">Điểm HK II</div>
+                        <div className="text-base font-black font-mono text-indigo-800">
+                          {fullYearSummary.hk2.totalScore}/200
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-2 border border-emerald-100">
+                        <div className="text-[10px] text-slate-500 font-semibold">Thưởng</div>
+                        <div className="text-base font-black font-mono text-emerald-700">
+                          +{fullYearSummary.hk2.positivePoints}
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-2 border border-rose-100">
+                        <div className="text-[10px] text-slate-500 font-semibold">Điểm trừ</div>
+                        <div className="text-base font-black font-mono text-rose-700">
+                          -{fullYearSummary.hk2.negativePoints}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* LỊCH SỬ GHI NHẬN SỰ VIỆC CHIẾM PHẦN LỚN CHIỀU CAO CÒN LẠI */}
+            {/* LỊCH SỬ GHI NHẬN SỰ VIỆC */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
@@ -1170,44 +1552,60 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
                   </h3>
                 </div>
                 <span className="text-xs text-slate-500 font-semibold">
-                  {disciplineStats.filteredEvents.length} bản ghi
+                  {displayedDisciplineEvents.length} bản ghi
                 </span>
               </div>
 
-              {/* DEDICATED SMOOTH SCROLL CONTAINER */}
               <div className="mt-3 border border-slate-200/80 rounded-xl overflow-hidden">
                 <div className="max-h-[360px] overflow-y-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-50/90 sticky top-0 z-10 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
                       <tr>
                         <th className="py-2.5 px-3 w-28">Ngày</th>
+                        <th className="py-2.5 px-3 w-20">Học kỳ</th>
                         <th className="py-2.5 px-3">Sự việc / Quy tắc</th>
-                        <th className="py-2.5 px-3 w-24 text-center">Điểm</th>
+                        <th className="py-2.5 px-3 w-20 text-center">Điểm</th>
                         {role === 'teacher' && (
-                          <th className="py-2.5 px-3 w-16 text-right">Xóa</th>
+                          <th className="py-2.5 px-3 w-20 text-right">Thao tác</th>
                         )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {disciplineStats.filteredEvents.length === 0 ? (
+                      {displayedDisciplineEvents.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={role === 'teacher' ? 4 : 3}
+                            colSpan={role === 'teacher' ? 5 : 4}
                             className="py-10 text-center text-slate-400 text-xs"
                           >
                             Không có sự việc vi phạm hay thi đua nào trong kỳ này
                           </td>
                         </tr>
                       ) : (
-                        disciplineStats.filteredEvents.map((ev) => {
+                        displayedDisciplineEvents.map((ev) => {
                           const isPositive = ev.points >= 0;
+                          const isBeingEdited = editingEventId === ev.id;
                           return (
                             <tr
                               key={ev.id}
-                              className="hover:bg-sky-50/30 transition-colors"
+                              className={`transition-colors ${
+                                isBeingEdited
+                                  ? 'bg-amber-50/70'
+                                  : 'hover:bg-sky-50/30'
+                              }`}
                             >
                               <td className="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap">
-                                {ev.date}
+                                {formatDateVNShort(ev.date)}
+                              </td>
+                              <td className="py-2.5 px-3 whitespace-nowrap">
+                                <span
+                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                    ev.resolvedSemester === 'HK1'
+                                      ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                      : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                  }`}
+                                >
+                                  {ev.resolvedSemester === 'HK1' ? 'HK I' : 'HK II'}
+                                </span>
                               </td>
                               <td className="py-2.5 px-3 font-medium text-slate-800">
                                 <div>{ev.ruleName}</div>
@@ -1229,16 +1627,27 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
                                 </span>
                               </td>
                               {role === 'teacher' && (
-                                <td className="py-2.5 px-3 text-right">
-                                  <button
-                                    onClick={() =>
-                                      handleDeleteDisciplineEvent(ev.id, ev.ruleName)
-                                    }
-                                    title="Xóa sự việc này"
-                                    className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEditDisciplineEvent(ev)}
+                                      title="Chỉnh sửa sự việc này"
+                                      className="p-1 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDeleteDisciplineEvent(ev.id, ev.ruleName)
+                                      }
+                                      title="Xóa sự việc này"
+                                      className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </td>
                               )}
                             </tr>
@@ -1300,16 +1709,16 @@ export const StudentDetailView: React.FC<StudentDetailViewProps> = ({
             {/* Tóm tắt tình hình học sinh */}
             <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-100 space-y-3">
               <span className="font-bold text-slate-700 block uppercase tracking-wider text-xs">
-                Tóm tắt nề nếp & học tập
+                Tóm tắt nề nếp & học tập ({activePeriod.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'} - {activePeriod.academicYear})
               </span>
               <div className="space-y-2 text-slate-600">
                 <div className="flex justify-between py-1 border-b border-slate-200/60">
                   <span className="text-slate-500">Điểm thi đua hiện tại:</span>
-                  <span className="font-mono font-bold text-sky-800">{overallDisciplineStats.totalScore} điểm</span>
+                  <span className="font-mono font-bold text-sky-800">{activeSemesterStats.totalScore}/200 điểm</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200/60">
                   <span className="text-slate-500">Xếp loại rèn luyện:</span>
-                  <span className={`font-bold ${overallConductEval.colorClass}`}>{overallConductEval.label}</span>
+                  <span className={`font-bold ${activeSemesterConduct.colorClass}`}>{activeSemesterConduct.label}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-slate-500">Chuyên cần:</span>

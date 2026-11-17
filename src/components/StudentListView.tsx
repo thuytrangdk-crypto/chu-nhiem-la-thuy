@@ -34,6 +34,12 @@ import {
   ValidationError
 } from '../utils/excel';
 import { DisciplineExportModal } from './DisciplineExportModal';
+import {
+  deduplicateDisciplineEvents,
+  getActiveSemesterPeriod,
+  resolveEventPeriod,
+  toLocalDateString,
+} from '../utils/scoring';
 
 interface StudentListViewProps {
   data: AppData;
@@ -76,8 +82,11 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
   // Discipline Competition Export Modal
   const [isDisciplineExportModalOpen, setIsDisciplineExportModalOpen] = useState(false);
 
+  // Active semester determined dynamically from configured calendar
+  const activePeriod = useMemo(() => getActiveSemesterPeriod(data.settings), [data.settings]);
+
   // Today's date string for attendance lookup
-  const todayDateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayDateStr = useMemo(() => toLocalDateString(), []);
 
   // Precompute map of today's attendance by studentId
   const attendanceTodayMap = useMemo(() => {
@@ -90,16 +99,22 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
     return map;
   }, [data.attendance, todayDateStr]);
 
-  // Precompute map of violation counts (points < 0) by studentId
+  // Precompute map of violation counts (points < 0) in the active semester by studentId
   const violationCountMap = useMemo(() => {
     const map = new Map<string, number>();
-    for (const ev of data.disciplineEvents) {
+    for (const ev of deduplicateDisciplineEvents(data.disciplineEvents)) {
       if (ev.points < 0) {
-        map.set(ev.studentId, (map.get(ev.studentId) || 0) + 1);
+        const period = resolveEventPeriod(ev, data.settings);
+        if (
+          period.academicYear === activePeriod.academicYear &&
+          period.semester === activePeriod.semester
+        ) {
+          map.set(ev.studentId, (map.get(ev.studentId) || 0) + 1);
+        }
       }
     }
     return map;
-  }, [data.disciplineEvents]);
+  }, [data.disciplineEvents, data.settings, activePeriod]);
 
   // Filtered & sorted student list
   const filteredStudents = useMemo(() => {
@@ -426,7 +441,9 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
                     {/* Top Right Warning Icon: ONLY when student actually has violations */}
                     {hasViolation && (
                       <div
-                        title={`Có ${violations} vi phạm kỷ luật`}
+                        title={`Có ${violations} vi phạm kỷ luật trong ${
+                          activePeriod.semester === 'HK1' ? 'Học kỳ I' : 'Học kỳ II'
+                        } (${activePeriod.academicYear})`}
                         className="absolute top-3 right-3 flex items-center justify-center w-6 h-6 rounded-full bg-rose-50 text-rose-500 border border-rose-200/80"
                       >
                         <AlertTriangle className="w-3.5 h-3.5" />
@@ -526,7 +543,9 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
                   <th className="py-3 px-4 w-24">Giới tính</th>
                   <th className="py-3 px-4 w-32">Ngày sinh</th>
                   <th className="py-3 px-4 w-32">SĐT Liên hệ</th>
-                  <th className="py-3 px-4 w-32 text-center">Vi phạm</th>
+                  <th className="py-3 px-4 w-32 text-center">
+                    Vi phạm ({activePeriod.semester === 'HK1' ? 'HK I' : 'HK II'})
+                  </th>
                   <th className="py-3 px-4 w-36">Tài khoản</th>
                   <th className="py-3 px-4 w-44 text-right">Thao tác</th>
                 </tr>

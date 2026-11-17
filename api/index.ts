@@ -169,6 +169,102 @@ function cleanAnnouncementsForView(announcements: any[], teacherName?: string): 
   });
 }
 
+function normalizeYearStr(raw?: string): string {
+  const clean = (raw || '').trim();
+  const match = clean.match(/(\d{4})\s*[-–/]\s*(\d{4})/);
+  if (match) return `${match[1]} - ${match[2]}`;
+  const currentYear = new Date().getFullYear();
+  return clean || `${currentYear} - ${currentYear + 1}`;
+}
+
+function defaultCalendarForYear(academicYear: string) {
+  const norm = normalizeYearStr(academicYear);
+  const match = norm.match(/(\d{4})\s*-\s*(\d{4})/);
+  const startYear = match ? parseInt(match[1], 10) : new Date().getFullYear();
+  const endYear = match ? parseInt(match[2], 10) : startYear + 1;
+  return {
+    academicYear: norm,
+    hk1Start: `${startYear}-09-01`,
+    hk1End: `${endYear}-01-15`,
+    hk2Start: `${endYear}-01-16`,
+    hk2End: `${endYear}-05-31`,
+  };
+}
+
+function normalizeSemesterConfigs(configs: any, activeYear?: string) {
+  const map = new Map<string, any>();
+  if (Array.isArray(configs)) {
+    for (const cfg of configs) {
+      if (!cfg || !cfg.academicYear) continue;
+      const norm = normalizeYearStr(String(cfg.academicYear));
+      const fallback = defaultCalendarForYear(norm);
+      map.set(norm, {
+        academicYear: norm,
+        hk1Start: String(cfg.hk1Start || fallback.hk1Start).slice(0, 10),
+        hk1End: String(cfg.hk1End || fallback.hk1End).slice(0, 10),
+        hk2Start: String(cfg.hk2Start || fallback.hk2Start).slice(0, 10),
+        hk2End: String(cfg.hk2End || fallback.hk2End).slice(0, 10),
+      });
+    }
+  }
+  const activeNorm = normalizeYearStr(activeYear);
+  if (!map.has(activeNorm)) {
+    map.set(activeNorm, defaultCalendarForYear(activeNorm));
+  }
+  return Array.from(map.values()).sort((a, b) => a.academicYear.localeCompare(b.academicYear));
+}
+
+function resolveServerDateToSemester(dateStr: string, settings: any): {
+  academicYear: string;
+  semester: 'HK1' | 'HK2';
+  isWithinConfiguredRange: boolean;
+} {
+  const cleanDate = String(dateStr || '').slice(0, 10);
+  const configs = normalizeSemesterConfigs(settings?.semesterConfigs, settings?.academicYear);
+  const activeNorm = normalizeYearStr(settings?.academicYear);
+  const ordered = [
+    ...configs.filter((c) => c.academicYear === activeNorm),
+    ...configs.filter((c) => c.academicYear !== activeNorm),
+  ];
+
+  for (const cfg of ordered) {
+    if (cleanDate >= cfg.hk1Start && cleanDate <= cfg.hk1End) {
+      return { academicYear: cfg.academicYear, semester: 'HK1', isWithinConfiguredRange: true };
+    }
+    if (cleanDate >= cfg.hk2Start && cleanDate <= cfg.hk2End) {
+      return { academicYear: cfg.academicYear, semester: 'HK2', isWithinConfiguredRange: true };
+    }
+  }
+
+  const m = cleanDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const y = parseInt(m[1], 10);
+    const mon = parseInt(m[2], 10);
+    for (const cfg of ordered) {
+      const yMatch = cfg.academicYear.match(/(\d{4})\s*-\s*(\d{4})/);
+      const sy = yMatch ? parseInt(yMatch[1], 10) : y;
+      const ey = yMatch ? parseInt(yMatch[2], 10) : y + 1;
+      if (cleanDate > cfg.hk1End && cleanDate < cfg.hk2Start) {
+        return { academicYear: cfg.academicYear, semester: 'HK1', isWithinConfiguredRange: false };
+      }
+      if (cleanDate >= `${sy}-07-01` && cleanDate < cfg.hk1Start) {
+        return { academicYear: cfg.academicYear, semester: 'HK1', isWithinConfiguredRange: false };
+      }
+      if (cleanDate > cfg.hk2End && cleanDate <= `${ey}-06-30`) {
+        return { academicYear: cfg.academicYear, semester: 'HK2', isWithinConfiguredRange: false };
+      }
+    }
+    const inferredStart = mon >= 8 ? y : y - 1;
+    return {
+      academicYear: `${inferredStart} - ${inferredStart + 1}`,
+      semester: mon >= 8 || mon === 1 ? 'HK1' : 'HK2',
+      isWithinConfiguredRange: false,
+    };
+  }
+
+  return { academicYear: activeNorm, semester: 'HK1', isWithinConfiguredRange: false };
+}
+
 // In-memory cache & TTL for high-frequency read bursts
 let memoryDb: any = null;
 let lastDbFetchTime = 0;
@@ -815,8 +911,19 @@ app.get(['/api/data', '/data'], authMiddleware, async (req, res) => {
 
     const cleanAnnouncements = cleanAnnouncementsForView(db.announcements, db.settings?.teacherName);
 
+    const effectiveSettings = {
+      ...db.settings,
+      baseDisciplinePoints:
+        typeof db.settings?.baseDisciplinePoints === 'number' &&
+        db.settings.baseDisciplinePoints > 0 &&
+        db.settings.baseDisciplinePoints !== 100
+          ? db.settings.baseDisciplinePoints
+          : 200,
+      semesterConfigs: normalizeSemesterConfigs(db.settings?.semesterConfigs, db.settings?.academicYear),
+    };
+
     const common = {
-      settings: db.settings,
+      settings: effectiveSettings,
       disciplineRules: db.disciplineRules.filter((r: any) => r.isActive !== false),
       subjects: db.subjects.filter((s: any) => s.isActive !== false),
       announcements: cleanAnnouncements,
@@ -894,18 +1001,43 @@ app.post(['/api/settings', '/settings'], authMiddleware, teacherOnly, async (req
       teacherName,
       academicYear,
       baseDisciplinePoints,
+      semesterConfigs,
       conductThresholds,
       teacherPassword,
       oldTeacherPassword,
     } = req.body;
+
+    if (Array.isArray(semesterConfigs)) {
+      for (const cfg of semesterConfigs) {
+        if (!cfg || !cfg.academicYear || !cfg.hk1Start || !cfg.hk1End || !cfg.hk2Start || !cfg.hk2End) {
+          return res.status(400).json({ error: 'Vui lòng nhập đầy đủ ngày bắt đầu và kết thúc cho cả Học kỳ I và Học kỳ II' });
+        }
+        if (cfg.hk1Start > cfg.hk1End) {
+          return res.status(400).json({ error: `Năm học ${cfg.academicYear}: Ngày bắt đầu HK I không được sau ngày kết thúc HK I` });
+        }
+        if (cfg.hk2Start > cfg.hk2End) {
+          return res.status(400).json({ error: `Năm học ${cfg.academicYear}: Ngày bắt đầu HK II không được sau ngày kết thúc HK II` });
+        }
+        if (cfg.hk1End >= cfg.hk2Start) {
+          return res.status(400).json({ error: `Năm học ${cfg.academicYear}: Ngày bắt đầu HK II phải sau ngày kết thúc HK I` });
+        }
+      }
+    }
 
     const { result, updated_at, version, revision_token } = await mutateDatabase(req, (draft) => {
       if (appName) draft.settings.appName = appName;
       if (schoolName) draft.settings.schoolName = schoolName;
       if (className) draft.settings.className = className;
       if (teacherName) draft.settings.teacherName = teacherName;
-      if (academicYear) draft.settings.academicYear = academicYear;
-      if (typeof baseDisciplinePoints === 'number') draft.settings.baseDisciplinePoints = baseDisciplinePoints;
+      if (academicYear) draft.settings.academicYear = normalizeYearStr(academicYear);
+      if (typeof baseDisciplinePoints === 'number' && baseDisciplinePoints > 0) {
+        draft.settings.baseDisciplinePoints = baseDisciplinePoints;
+      }
+      if (Array.isArray(semesterConfigs)) {
+        draft.settings.semesterConfigs = normalizeSemesterConfigs(semesterConfigs, draft.settings.academicYear);
+      } else {
+        draft.settings.semesterConfigs = normalizeSemesterConfigs(draft.settings.semesterConfigs, draft.settings.academicYear);
+      }
       if (Array.isArray(conductThresholds)) draft.settings.conductThresholds = conductThresholds;
 
       let passwordChanged = false;
@@ -1211,12 +1343,18 @@ app.post(['/api/attendance', '/attendance'], authMiddleware, teacherOnly, async 
   }
 });
 
-// 9. Discipline Management (WITH ATTENDANCE SYNC)
-app.post(['/api/discipline/event', '/discipline/event'], authMiddleware, teacherOnly, async (req, res) => {
+// 9. Discipline Management (CREATE & UPDATE WITH SEMESTER RESOLUTION & ATTENDANCE SYNC)
+async function handleSaveDisciplineEvent(req: express.Request, res: express.Response) {
   try {
-    const { studentId, date, ruleId, note } = req.body;
+    const id = req.params?.id || req.body?.id;
+    const { studentId, date, ruleId, note, academicYear: requestedYear, semester: requestedSemester } = req.body;
     if (!studentId || !date || !ruleId) {
       return res.status(400).json({ error: 'Thiếu thông tin ghi nhận thi đua' });
+    }
+
+    const cleanDate = String(date).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
+      return res.status(400).json({ error: 'Định dạng ngày xảy ra không hợp lệ (YYYY-MM-DD)' });
     }
 
     const { result, updated_at, version, revision_token } = await mutateDatabase(req, (draft) => {
@@ -1229,11 +1367,105 @@ app.post(['/api/discipline/event', '/discipline/event'], authMiddleware, teacher
         throw err;
       }
 
+      const resolved = resolveServerDateToSemester(cleanDate, draft.settings);
+      const finalYear =
+        !resolved.isWithinConfiguredRange && requestedYear
+          ? normalizeYearStr(String(requestedYear))
+          : resolved.academicYear;
+      const finalSemester: 'HK1' | 'HK2' =
+        !resolved.isWithinConfiguredRange && (requestedSemester === 'HK1' || requestedSemester === 'HK2')
+          ? requestedSemester
+          : resolved.semester;
+
+      if (id) {
+        const event = draft.disciplineEvents.find((e: any) => e.id === id);
+        if (!event) {
+          const err = new Error('Không tìm thấy bản ghi thi đua để chỉnh sửa');
+          (err as any).statusCode = 404;
+          throw err;
+        }
+
+        const oldDate = event.date;
+        const oldLinkedAttendanceId = event.linkedAttendanceId;
+
+        // Reconcile old linked attendance if date or rule changed
+        if (oldLinkedAttendanceId) {
+          const otherLinked = draft.disciplineEvents.find(
+            (e: any) => e.id !== id && e.studentId === event.studentId && e.date === oldDate && e.linkedAttendanceId
+          );
+          const oldAttIdx = draft.attendance.findIndex(
+            (a: any) => a.id === oldLinkedAttendanceId || (a.studentId === event.studentId && a.date === oldDate)
+          );
+          if (oldAttIdx !== -1) {
+            if (otherLinked) {
+              const otherRule = draft.disciplineRules.find((r: any) => r.id === otherLinked.ruleId);
+              if (otherRule && otherRule.linkedAttendance && otherRule.linkedAttendance !== 'none') {
+                draft.attendance[oldAttIdx].status = otherRule.linkedAttendance;
+                draft.attendance[oldAttIdx].linkedDisciplineId = otherLinked.id;
+              }
+            } else {
+              draft.attendance[oldAttIdx].status = 'present';
+              draft.attendance[oldAttIdx].source = 'manual';
+              draft.attendance[oldAttIdx].linkedDisciplineId = undefined;
+            }
+          }
+        }
+
+        let newLinkedAttendanceId: string | null = null;
+        if (rule.linkedAttendance && rule.linkedAttendance !== 'none') {
+          let att = draft.attendance.find((a: any) => a.studentId === studentId && a.date === cleanDate);
+          if (att) {
+            att.status = rule.linkedAttendance;
+            att.source = 'discipline_sync';
+            att.linkedDisciplineId = event.id;
+            att.updatedAt = new Date().toISOString();
+            newLinkedAttendanceId = att.id;
+          } else {
+            newLinkedAttendanceId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+            draft.attendance.push({
+              id: newLinkedAttendanceId,
+              studentId,
+              date: cleanDate,
+              status: rule.linkedAttendance,
+              source: 'discipline_sync',
+              linkedDisciplineId: event.id,
+              updatedAt: new Date().toISOString(),
+            });
+          }
+        }
+
+        event.studentId = studentId;
+        event.date = cleanDate;
+        event.academicYear = finalYear;
+        event.semester = finalSemester;
+        event.ruleId = ruleId;
+        event.ruleName = rule.name;
+        event.points = rule.points;
+        event.note = (note || '').trim();
+        event.linkedAttendanceId = newLinkedAttendanceId;
+        event.updatedAt = new Date().toISOString();
+
+        draft.auditLogs.unshift({
+          id: `log_${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          action: 'Cập nhật sự việc thi đua',
+          actor: draft.settings.teacherName,
+          details: `Cập nhật cho ${student.fullName} (${finalSemester} ${finalYear}, ${cleanDate}): ${rule.name} (${rule.points >= 0 ? '+' : ''}${rule.points} điểm)`,
+        });
+
+        return {
+          message: 'Đã cập nhật sự việc thi đua và tính lại điểm thành công!',
+          event,
+          attendanceSynced: !!newLinkedAttendanceId,
+          isWithinConfiguredRange: resolved.isWithinConfiguredRange,
+        };
+      }
+
       const eventId = `disc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       let linkedAttendanceId: string | null = null;
 
       if (rule.linkedAttendance && rule.linkedAttendance !== 'none') {
-        let att = draft.attendance.find((a: any) => a.studentId === studentId && a.date === date);
+        let att = draft.attendance.find((a: any) => a.studentId === studentId && a.date === cleanDate);
         if (att) {
           att.status = rule.linkedAttendance;
           att.source = 'discipline_sync';
@@ -1245,7 +1477,7 @@ app.post(['/api/discipline/event', '/discipline/event'], authMiddleware, teacher
           draft.attendance.push({
             id: linkedAttendanceId,
             studentId,
-            date,
+            date: cleanDate,
             status: rule.linkedAttendance,
             source: 'discipline_sync',
             linkedDisciplineId: eventId,
@@ -1257,7 +1489,9 @@ app.post(['/api/discipline/event', '/discipline/event'], authMiddleware, teacher
       const newEvent = {
         id: eventId,
         studentId,
-        date,
+        date: cleanDate,
+        academicYear: finalYear,
+        semester: finalSemester,
         ruleId,
         ruleName: rule.name,
         points: rule.points,
@@ -1273,13 +1507,14 @@ app.post(['/api/discipline/event', '/discipline/event'], authMiddleware, teacher
         timestamp: new Date().toISOString(),
         action: 'Ghi nhận thi đua',
         actor: draft.settings.teacherName,
-        details: `Ghi nhận cho ${student.fullName}: ${rule.name} (${rule.points >= 0 ? '+' : ''}${rule.points} điểm)`,
+        details: `Ghi nhận cho ${student.fullName} (${finalSemester} ${finalYear}, ${cleanDate}): ${rule.name} (${rule.points >= 0 ? '+' : ''}${rule.points} điểm)`,
       });
 
       return {
         message: 'Ghi nhận sự việc thi đua thành công!',
         event: newEvent,
         attendanceSynced: !!linkedAttendanceId,
+        isWithinConfiguredRange: resolved.isWithinConfiguredRange,
       };
     });
 
@@ -1288,7 +1523,10 @@ app.post(['/api/discipline/event', '/discipline/event'], authMiddleware, teacher
     const statusCode = err.statusCode || (err.message?.includes('DỮ_LIỆU_XUNG_ĐỘT') ? 409 : 500);
     return res.status(statusCode).json({ error: cleanErrorMessage(err.message) });
   }
-});
+}
+
+app.post(['/api/discipline/event', '/discipline/event'], authMiddleware, teacherOnly, handleSaveDisciplineEvent);
+app.put(['/api/discipline/event/:id', '/discipline/event/:id'], authMiddleware, teacherOnly, handleSaveDisciplineEvent);
 
 // Delete Discipline Event and Recalculate Attendance
 app.delete(['/api/discipline/event/:id', '/discipline/event/:id'], authMiddleware, teacherOnly, async (req, res) => {
